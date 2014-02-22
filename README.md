@@ -3,7 +3,7 @@ SurfStack Routing in PHP[![Build Status](https://travis-ci.org/josephspurrier/su
 
 Single class that determines if a request URL maps to a class and method.
 
-For more examples of different route wildcards combinations, check out the tests.
+For more examples of different route wildcard combinations, check out the tests.
 
 For this example, we'll assume you have a class called: SurfStack\Test\TestClass.
 The class will have two methods called: foo and bar.
