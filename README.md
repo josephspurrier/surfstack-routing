@@ -1,5 +1,5 @@
-SurfStack Routing in PHP
-===============================
+SurfStack Routing in PHP[![Build Status](https://travis-ci.org/josephspurrier/surfstack-routing.png)](https://travis-ci.org/josephspurrier/surfstack-routing)
+========================
 
 Single class that determines if a request URL maps to a class and method.
 
