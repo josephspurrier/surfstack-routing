@@ -24,7 +24,7 @@ class TestClass
 }
 ```
 
-You would like to map each of these methods so they can be access from
+You would like to map each of these methods so they can be accessed from
 different URLs.
 In your main application file like index.php, follow these instructions.
 
