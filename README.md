@@ -9,7 +9,7 @@ extensible dispatching methods:
 * beforeMap
 * afterMap
 * beforeDispatch
-* afterDispath
+* afterDispatch
 * showNotFound
 * showError
 
