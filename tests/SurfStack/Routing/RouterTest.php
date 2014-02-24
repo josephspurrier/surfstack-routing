@@ -33,24 +33,7 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($a->isRouteMapped());
     }
     
-    public function testMap()
-    {
-        // Create an instance
-        $a = new SurfStack\Routing\Router();
-    
-        // Pass the array of routes
-        $a->setRoutes(array(
-            '/foo' => array('SurfStack\Test\TestClass', 'foo'),
-        ));
-    
-        // Pass URL
-        $a->map('/foo?def');
-        
-        // Should find route
-        $this->assertTrue($a->isRouteMapped());
-    }
-    
-    public function testMapClassMethod()
+    public function testMapStaticClassMethod()
     {
         // Create an instance
         $a = new SurfStack\Routing\Router();
@@ -66,6 +49,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map('/foo?def');
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
         
@@ -76,7 +65,127 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertSame($a->getParameters(), array());
     }
     
-    public function testMapNoMethodDefaultIndex()
+    public function testMapStaticFunction()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $function = 'testFunction';
+    
+        function testFunction()
+        {
+            echo 'Hello';
+        }
+        
+        // Pass the array of routes
+        $a->setRoutes(array(
+            '/foo' => $function,
+        ));
+    
+        // Pass URL
+        $a->map('/foo?def');
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_FUNCTION);
+    
+        // Get the mapped function
+        $this->assertSame($a->getMappedFunction(), $function);
+        
+        // Get the parameters
+        $this->assertSame($a->getParameters(), array());
+    }
+    
+    public function testMapStaticAnonymousFunction()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $anonFunction = function ()
+        {
+            echo 'Hello';
+        };
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            '/foo' => $anonFunction,
+        ));
+    
+        // Pass URL
+        $a->map('/foo?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ANONFUNCTION);
+    
+        // Get the mapped function
+        $this->assertSame($a->getMappedAnonFunction(), $anonFunction);
+    
+        // Get the parameters
+        $this->assertSame($a->getParameters(), array());
+    }
+    
+    public function testMapDynamicAnonymousFunctionWildcardWildcard()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $anonFunction = function ($param1, $param2)
+        {
+            echo "$param1 $param2";
+        };
+        
+        $pm1 = 'abc';
+        $pm2 = '123'; 
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            '/foo/*/*' => $anonFunction,
+        ));
+    
+        // Pass URL
+        $a->map("/foo/$pm1/$pm2?def");
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ANONFUNCTION);
+    
+        // Get the mapped function
+        $this->assertSame($a->getMappedAnonFunction(), $anonFunction);
+        
+        // Get the parameters
+        $this->assertSame($a->getParameters(), array($pm1, $pm2));
+    }
+    
+    public function testMapDynamicAnonymousFunctionWildcardDoubleWildcard()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $anonFunction = function ($param1, $param2)
+        {
+            echo "$param1 $param2";
+        };
+    
+        $pm1 = 'abc';
+        $pm2 = '123/def/ghi';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+        '/foo/*/**' => $anonFunction,
+        ));
+    
+        // Pass URL
+        $a->map("/foo/$pm1/$pm2?def");
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ANONFUNCTION);
+    
+        // Get the mapped function
+        $this->assertSame($a->getMappedAnonFunction(), $anonFunction);
+    
+        // Get the parameters
+        $this->assertSame($a->getParameters(), array($pm1, $pm2));
+    }
+    
+    public function testMapNoMethod()
     {
         // Create an instance
         $a = new SurfStack\Routing\Router();
@@ -86,20 +195,17 @@ class RouterTest extends PHPUnit_Framework_TestCase
     
         // Pass the array of routes
         $a->setRoutes(array(
-            '/foo' => array($class),
+            '/foo' => array($class),    // Method is missing
         ));
     
         // Pass URL
         $a->map('/foo?def');
-    
-        // Get the mapped class
-        $this->assertSame($a->getMappedClass(), $class);
-    
-        // Get the mapped method
-        $this->assertSame($a->getMappedMethod(), 'index');
-    
-        // Get the parameters
-        $this->assertSame($a->getParameters(), array());
+
+        // Should not find route
+        $this->assertFalse($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ERROR);
     }
     
     public function testMapDynamicAction()
@@ -118,6 +224,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$action?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
         
@@ -145,6 +257,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$action/test/$wildcard?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -172,6 +290,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$action/test/$wildcard?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -200,6 +324,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$action/test/$wildcard/$wildstring?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -228,6 +358,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$wildcard/test/$action/$wildstring?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -257,6 +393,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$action/test/$wildcard/$wildstring/$wildint?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -285,6 +427,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/$action/test/$wildcard1/$wildcard2?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -313,6 +461,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/test/$wildcard1/$wildcard2?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -341,6 +495,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/test/$wildcard1/$wildcard2?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
@@ -369,6 +529,12 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->map("/foo/test/$wildcard1/$wildcard2?def");
     
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+        
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_CLASSMETHOD);
+        
         // Get the mapped class
         $this->assertSame($a->getMappedClass(), $class);
     
