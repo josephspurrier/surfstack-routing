@@ -1,4 +1,4 @@
-SurfStack Routing in PHP[![Build Status](https://travis-ci.org/josephspurrier/surfstack-routing.png)](https://travis-ci.org/josephspurrier/surfstack-routing)
+SurfStack Routing in PHP [![Build Status](https://travis-ci.org/josephspurrier/surfstack-routing.png)](https://travis-ci.org/josephspurrier/surfstack-routing)
 ========================
 
 Single class that determines if a request URL maps to a class method, function, 
@@ -181,3 +181,5 @@ else
 // Method will automatically remove the query string
 $router->dispatch('/foo/abc123/bar?def');
 ```
+
+To install using composer, use the code from the Wiki page [Composer Wiki page](../../wiki/Composer).
