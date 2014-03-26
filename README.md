@@ -141,8 +141,8 @@ manual route where you control it all yourself.
 The easy way: Automatic Dispatching
 
 ```php
-// Does the work for you
-$router->dispatch('/foo/abc123/bar?def');
+// Pass the user requested URL and it does the work for you
+$router->dispatch('/foo');
 ```
 
 Or the other way: Manual Dispatching
@@ -174,7 +174,7 @@ else
 ## Hooks
 
 There are 8 hooks you can utilize if you choose the automatic dispatching. They
-called in this order:
+are called in this order:
 * $router::C_HOOK_BEFORE_MAP
 * $router::C_HOOK_AFTER_MAP
 * $router::C_HOOK_BEFORE_DISPATCH
@@ -184,7 +184,7 @@ called in this order:
 *     $router::C_HOOK_ERROR - only if a problem occurred with the configuration
 * $router::C_HOOK_AFTER_DISPATCH
 
-The hooks are easy to use and receive your $router object as a parameter 0.
+The hooks are easy to use and receive your $router object as parameter 0.
 The hooks can be any type of callable entity. C_HOOK_PARAMETER_LOGIC is used to
 change the logic for the getCallableParameters() method.
 
