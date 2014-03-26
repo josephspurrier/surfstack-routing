@@ -82,7 +82,7 @@ $router->setRoute('GET /foo', array('SurfStack\Test\TestClass', 'foo'));
 
 // Collection of routes
 $router->setRoutes(array(
-    'GET /foo'      => array('SurfStack\Test\TestClass', 'foo'),
+    'POST /foo'      => array('SurfStack\Test\TestClass', 'foo'),
     'GET /foobar'  => 'testFunction',
 ));
 ```
@@ -93,8 +93,8 @@ The wildcards serve as basic input validation. If you want a certain type
 of value to be passed to the called route, you can use a wildcard to designate
 the value as a parameter.
 
-These wilcards are already built in: {alpha}, {int}, **, ***, {action}.
-The {alpha} only allows letters and {int} only allows numbers. The ** allows
+These wilcards are already built in: {alpha}, {int}, \*, **, {action}.
+The {alpha} only allows letters and {int} only allows numbers. The \* allows
 letters, numbers, underscore, hyphen, plus, period, and percent. The *** adds
 the allowance of slashes (only for those who want to chop up the
 URL themselves). The {action} only works if the route is a class and allows any
@@ -154,7 +154,7 @@ $router->map('/foo');
 // If the URL matches a route (page found)
 if ($router->isRouteMapped())
 {
-    call_user_func_array($router->getCallableRoute(), $router->getParameters());
+    call_user_func_array($router->getCallableRoute(), $router->getCallableParameters());
 }
 else
 {
