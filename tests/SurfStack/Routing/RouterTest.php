@@ -320,8 +320,10 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Get the mapped type
         $this->assertSame($a->getMapType(), $a::C_ROUTE_ERROR);
         
+        $arr = $a->getRoute();
+        
         // Get the WRONG mapped method
-        $this->assertNotSame($a->getRoute()[1], $action);
+        $this->assertNotSame($arr[1], $action);
     
         // Get the WRONG parameters
         $this->assertNotSame($a->getParameters(), array($wildcard, $wildstring));
