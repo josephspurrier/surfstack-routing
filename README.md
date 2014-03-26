@@ -173,11 +173,13 @@ else
 
 ## Hooks
 
-There are 8 hooks you can utilize if you choose the automatic dispatching. They
+There are 10 hooks you can utilize if you choose the automatic dispatching. They
 are called in this order:
 * $router::C_HOOK_BEFORE_MAP
+* $router::C_HOOK_ROUTE_VALIDATION
 * $router::C_HOOK_AFTER_MAP
 * $router::C_HOOK_BEFORE_DISPATCH
+* $router::C_HOOK_ROUTE_LOGIC
 * $router::C_HOOK_PARAMETER_LOGIC
 *     $router::C_HOOK_DISPATCH - only if route is found
 *     $router::C_HOOK_NOT_FOUND - only if route is not found
@@ -253,6 +255,27 @@ $router->setHook($router::C_HOOK_PARAMETER_LOGIC, function ($r) {
         : $r->getParameters());
     // Return the secondary parameters, then $router, then other parameters
     return array_merge($r->getSecondaryParameters(), array($r), $params);
+});
+```
+
+The C_HOOK_ROUTE_LOGIC hook and C_HOOK_ROUTE_VALIDATION hook allow you to
+change the logic for validating and returning a callable entity. This is
+beneficial if you want use a dependency injection container to create the
+objects and you need to store more than 2 arguments in a route array.
+
+```php
+// Modfy route validation logic
+$router->setHook($router::C_HOOK_ROUTE_VALIDATION, function ($r) {
+        // Get the raw route
+        $route = $this->getRoute();
+        
+        // Add the check for a dependency container
+        if (is_array($route) && count($route) > 2)
+        {
+            // Return so it is not marked as invalid
+            return true;
+        }
+        ...
 });
 ```
 

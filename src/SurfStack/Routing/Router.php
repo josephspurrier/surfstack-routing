@@ -85,6 +85,18 @@ class Router
     CONST C_HOOK_PARAMETER_LOGIC = 'hookParameterLogic';
     
     /**
+     * Function called by getCallableRoute()
+     * @var string
+     */
+    CONST C_HOOK_ROUTE_LOGIC = 'hookRouteLogic';
+    
+    /**
+     * Function called by isRouteCallable()
+     * @var string
+     */
+    CONST C_HOOK_ROUTE_VALIDATION = 'hookRouteValidation';
+    
+    /**
      * Discovered name of the route
      * @var string
      */
@@ -379,31 +391,42 @@ class Router
     }
     
     /**
-     * Determine if the route is callable
+     * Determine is the route is valid and callable
      */
-    protected function isRouteCallable()
+    protected function hookRouteValidation()
     {
-        if (!is_callable($this->mixedRoute))
+        // Get the raw route
+        $route = $this->getRoute();
+        
+        // If the route is callable
+        if (!is_callable($route))
         {
             // If a class method
-            if (is_array($this->mixedRoute))
+            if (is_array($route))
             {
-                $class = (isset($this->mixedRoute[0]) ? $this->mixedRoute[0] : 'MISSING');
-                $method = (isset($this->mixedRoute[1]) ? $this->mixedRoute[1] : 'MISSING');
+                $class = (isset($route[0]) ? $route[0] : 'MISSING');
+                $method = (isset($route[1]) ? $route[1] : 'MISSING');
                 $this->strError = "The class, $class, and method, $method, cannot be called.";
             }
             // Else if a function
-            else if (is_string($this->mixedRoute))
+            else if (is_string($route))
             {
-                $this->strError = "The function, {$this->mixedRoute}, cannot be called.";
+                $this->strError = "The function, $route, cannot be called.";
             }
             // Else is unsupported
             else
             {
-                $this->strError = 'The route type, '.gettype($this->mixedRoute).', is not supported.';
-                var_dump($this->mixedRoute);
+                $this->strError = 'The route type, '.gettype($route).', is not supported.';
             }
         }
+    }
+    
+    /**
+     * Determine if the route is callable
+     */
+    protected function isRouteCallable()
+    {
+        return $this->callHook($this::C_HOOK_ROUTE_VALIDATION);
     }
     
     /**
@@ -416,19 +439,36 @@ class Router
     }
     
     /**
+     * Return the route logic
+     * @return mixed
+     */
+    protected function hookRouteLogic()
+    {
+        // Get the raw route
+        $route = $this->getRoute();
+        
+        // If the route contains two items and is a callable class method
+        if (is_array($route)
+        && count($route) == 2
+        && method_exists($route[0], $route[1]))
+        {
+            // Return a usable array for static and non-static methods
+            return array(new $route[0], $route[1]);
+        }
+        // Else just return the item
+        else
+        {
+            return $route;
+        }
+    }
+    
+    /**
      * Return the discovered route that can be used with call_user_func_array()
      * @return mixed (Array for class method, string for function, or closure)
      */
     public function getCallableRoute()
     {
-        if (is_array($this->mixedRoute) && count($this->mixedRoute) > 1)
-        {
-            return array(new $this->mixedRoute[0], $this->mixedRoute[1]);
-        }
-        else
-        {
-            return $this->mixedRoute;
-        }
+        return $this->callHook($this::C_HOOK_ROUTE_LOGIC);
     }
 
     /**

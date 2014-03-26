@@ -626,6 +626,9 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $a->setHook($a::C_HOOK_BEFORE_DISPATCH, function () use (&$test) {
             $test .= 'beforeDispatch,';
         });
+        $a->setHook($a::C_HOOK_ROUTE_VALIDATION, function () use (&$test) {
+            $test .= 'routeValidation,';
+        });
         $a->setHook($a::C_HOOK_AFTER_DISPATCH, function () use (&$test) {
             $test .= 'afterDispatch,';
         });
@@ -638,15 +641,23 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $a->setHook($a::C_HOOK_ERROR, function () use (&$test) {
             $test .= 'error,';
         });
-        $a->setHook($a::C_HOOK_DISPATCH, function () use (&$test) {
+        $a->setHook($a::C_HOOK_DISPATCH, function ($r) use (&$test) {
             $test .= 'hookDispatch,';
+            $r->getCallableRoute();
+            $r->getCallableParameters();
+        });
+        $a->setHook($a::C_HOOK_PARAMETER_LOGIC, function () use (&$test) {
+            $test .= 'hookParameter,';
+        });
+        $a->setHook($a::C_HOOK_ROUTE_LOGIC, function () use (&$test) {
+            $test .= 'hookRoute,';
         });
     
         // Run the logic
         $a->dispatch('/foo');
 
         // Should change value
-        $this->assertSame($test, 'beforeMAP,afterMAP,beforeDispatch,hookDispatch,afterDispatch,');
+        $this->assertSame($test, 'beforeMAP,routeValidation,afterMAP,beforeDispatch,hookDispatch,hookRoute,hookParameter,afterDispatch,');
     }
     
     public function testHookOrderSharing()
