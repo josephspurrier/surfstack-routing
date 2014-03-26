@@ -173,8 +173,8 @@ else
 
 ## Hooks
 
-There are 10 hooks you can utilize if you choose the automatic dispatching. They
-are called in this order:
+There are 10 hooks you can utilize if you choose the automatic dispatching. 
+Manual dispatching only uses the first 3 hooks. They are called in this order:
 * $router::C_HOOK_BEFORE_MAP
 * $router::C_HOOK_ROUTE_VALIDATION
 * $router::C_HOOK_AFTER_MAP
