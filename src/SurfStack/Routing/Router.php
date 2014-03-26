@@ -689,8 +689,10 @@ class Router
      */
     public function getParameter($int, $default = null)
     {
+        $arr = $this->getCallableParameters();
+        
         // Return the parameters
-        return (isset($this->getCallableParameters()[$int]) ? $this->getCallableParameters()[$int] : $default);
+        return (isset($arr[$int]) ? $arr[$int] : $default);
     }
     
     /**

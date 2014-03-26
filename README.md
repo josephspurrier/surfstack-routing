@@ -76,9 +76,6 @@ $router = new SurfStack\Routing\Router();
 
 You can set a route two different ways.
 
-Syntax: setRoute(string $pattern, mixed $route [, array $arrOverrideParameters])
-Syntax: setRoutes(array $arrRoutes)
-
 ```php
 // Single route
 $router->setRoute('GET /foo', array('SurfStack\Test\TestClass', 'foo'));
@@ -96,17 +93,17 @@ The wildcards serve as basic input validation. If you want a certain type
 of value to be passed to the called route, you can use a wildcard to designate
 the value as a parameter.
 
-These wilcards are already built in: {alpha}, {int}, *, **, {action}.
-The {alpha} only allows letters and {int} only allows numbers. The * allows
-letters, numbers, underscore, hyphen, plus, period, and percent. The ** adds
+These wilcards are already built in: {alpha}, {int}, **, ***, {action}.
+The {alpha} only allows letters and {int} only allows numbers. The ** allows
+letters, numbers, underscore, hyphen, plus, period, and percent. The *** adds
 the allowance of slashes (only for those who want to chop up the
 URL themselves). The {action} only works if the route is a class and allows any
 method name in the class to be used.
 
 Special considerations: Since the SurfStack router allows for multiple regex,
-there are additional restrictions. The {action} and ** can only exist once in
+there are additional restrictions. The {action} and *** can only exist once in
 the pattern. All the other wildcards can exist without restrictions. The 
-{action} MUST be the first wildcard if it is used. If ** is not used last, be
+{action} MUST be the first wildcard if it is used. If *** is not used last, be
 very careful because the parameters will overlap. See the tests for more
 information.
 
@@ -223,10 +220,10 @@ methods:
 
 ```php
 // Set the secondary parameters to a single route
-$router->setOverrideParameter('PUT /foo/*', array('secondary1', 'secondary2'));
+$router->setSecondaryParameter('PUT /foo/*', array('secondary1', 'secondary2'));
 
 // Set the secondary parameters for multiple routes
-$router->setOverrideParameters(array(
+$router->setSecondaryParameters(array(
     'GET /foo/{int}'  => array('secondary1', 'secondary2'),
     'GET /bar/*'      => array('secondary3', 'secondary4'),
 
