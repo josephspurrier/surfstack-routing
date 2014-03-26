@@ -23,12 +23,12 @@ The SurfStack Router features preloaded and configurable wildcards so your
 URL patterns no longer need to include regular expressions. You can preload
 them individually or via array. Most of the configurations can be added one at
 time or through arrays to save time. There is also no limit on the wildcards so
-you can use multiples in a route. The router also supports dynamic class
+you can use multiple in a route. The router also supports dynamic class
 methods so you can quickly turn a single class into an entire collection of
 available routes.
 
-There is a full set of unit tests for the routing pieces using PHPUnit. Take a
-look at the tests if you would like to see route wildcard combinations.
+There is a full set of unit tests for the Router class using PHPUnit. Take a
+look at the tests if you would like to see different wildcard combinations.
 
 The router also supports the X-HTTP-METHOD-OVERRIDE header for the webservers
 that don't allow HTTP operations like PUT and DELETE.
