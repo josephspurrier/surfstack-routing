@@ -95,15 +95,15 @@ the value as a parameter.
 
 These wilcards are already built in: {alpha}, {int}, \*, **, {action}.
 The {alpha} only allows letters and {int} only allows numbers. The \* allows
-letters, numbers, underscore, hyphen, plus, period, and percent. The *** adds
+letters, numbers, underscore, hyphen, plus, period, and percent. The ** adds
 the allowance of slashes (only for those who want to chop up the
 URL themselves). The {action} only works if the route is a class and allows any
 method name in the class to be used.
 
 Special considerations: Since the SurfStack router allows for multiple regex,
-there are additional restrictions. The {action} and *** can only exist once in
+there are additional restrictions. The {action} and ** can only exist once in
 the pattern. All the other wildcards can exist without restrictions. The 
-{action} MUST be the first wildcard if it is used. If *** is not used last, be
+{action} MUST be the first wildcard if it is used. If ** is not used last, be
 very careful because the parameters will overlap. See the tests for more
 information.
 
