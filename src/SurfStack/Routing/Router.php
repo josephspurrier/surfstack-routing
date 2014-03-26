@@ -439,7 +439,7 @@ class Router
     }
     
     /**
-     * Return the route logic
+     * Return the route entity
      * @return mixed
      */
     protected function hookRouteLogic()
