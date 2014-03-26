@@ -19,85 +19,142 @@ namespace SurfStack\Routing;
 class Router
 {
     /**
-     * Route is not found
-     * @var int
+     * Route is found
+     * @var string
      */
-    CONST C_NOTFOUND = 10;
+    CONST C_ROUTE_FOUND = 'Route_Found';
+    
+    /**
+     * Route is not found
+     * @var string
+     */
+    CONST C_ROUTE_NOT_FOUND = 'Route_Not_Found';
     
     /**
      * Route resulted in an error
-     * @var int
-     */
-    CONST C_ERROR = 11;
-    
-    /**
-     * Route maps to a class and method
-     * @var int
-     */
-    CONST C_CLASSMETHOD = 12;
-    
-    /**
-     * Route maps to a function
-     * @var int
-     */
-    CONST C_FUNCTION = 13;
-    
-    /**
-     * Route maps to an anonymous function
-     * @var int
-     */
-    CONST C_ANONFUNCTION = 14;
-    
-    /**
-     * Discovered name of the requested class
      * @var string
      */
-    private $strClass = '';
+    CONST C_ROUTE_ERROR = 'Route_Error';
     
     /**
-     * Discovered name of the requested method
+     * Function called before map()
      * @var string
      */
-    private $strMethod = '';
+    CONST C_HOOK_BEFORE_MAP = 'beforeMap';
     
     /**
-     * Discovered name of the requested function
+     * Function called after map()
      * @var string
      */
-    private $strFunction = '';
+    CONST C_HOOK_AFTER_MAP = 'afterMap';
     
     /**
-     * Discovered name of the requested anonymous function
+     * Function called before dispatch()
      * @var string
      */
-    private $strAnonFunction = '';
+    CONST C_HOOK_BEFORE_DISPATCH = 'beforeDispatch';
+    
+    /**
+     * Function called at dispatch
+     * @var string
+     */
+    CONST C_HOOK_DISPATCH = 'hookDispatch';
+    
+    /**
+     * Function called after dispatch()
+     * @var string
+     */
+    CONST C_HOOK_AFTER_DISPATCH = 'afterDispatch';
+    
+    /**
+     * Function called during dispatch()
+     * @var string
+     */
+    CONST C_HOOK_NOT_FOUND = 'hookNotFound';
+    
+    /**
+     * Function called during dispatch() 
+     * @var string
+     */
+    CONST C_HOOK_ERROR = 'hookError';
+    
+    /**
+     * Function called by getCallableParameters()
+     * @var string
+     */
+    CONST C_HOOK_PARAMETER_LOGIC = 'hookParameterLogic';
+    
+    /**
+     * Discovered name of the route
+     * @var string
+     */
+    protected $mixedRoute = false;
     
     /**
      * Discovered parameters from URI
      * @var array
      */
-    private $arrParameters = array();
+    protected $arrParameters = array();
+    
+    /**
+     * Passed parameters from route list
+     * @var array
+     */
+    protected $arrSecondaryParametersList = array();
+    
+    /**
+     * Passed parameters for the specific route
+     * @var array
+     */
+    protected $arrSecondaryParameters= array();
+    
+    /**
+     * Passed parameters from route list
+     * @var array
+     */
+    protected $arrParametersOverrideList = array();
+    
+    /**
+     * Passed parameters for the specific route
+     * @var array
+     */
+    protected $arrParametersOverride = array();
     
     /**
      * Named array of routes
      * @var array
      */
-    private $arrRoutes = array();
+    protected $arrRoutes = array();
+    
+    /**
+     * Name array of wildcards and their regex equivalent
+     * @var array
+     */
+    protected $arrWildcardDefinitions = array();
     
     /**
      * Error message if occured
      * @var string
      */
-    private $strError = '';
+    protected $strError = '';
     
     /**
-     * Set the routes
-     * @param array $routes
+     * Request URI
+     * @var string
      */
-    public function setRoutes(array $routes = array())
-    {
-        $this->arrRoutes = $routes;
-    }
+    protected $strURI;
+    
+    /**
+     * Hook closures
+     * @var array
+     */
+    protected $hooks = array();
+    
+    /**
+     * Query String array
+     * @var array
+     */
+    protected $arrQuery = array();
     
     /**
      * Maps the static route to variables
@@ -105,39 +162,13 @@ class Router
      * @param mixed $val
      * @return boolean Returns true on success, false on error
      */
-    private function mapStaticRoute($key, $val)
+    protected function mapStaticRoute($key, $val)
     {
-        // If the val is a string name of a function
-        if (is_string($val))
-        {
-            // Store the function name
-            $this->strFunction = $val;
-        }
-        // If the val is an array of class/method
-        else if (is_array($val))
-        {
-            // Invalid size
-            if (count($val) != 2)
-            {
-                $this->strError = "The key, $key, must have an array with 2 values: class name and method name.";
-                
-                return false;
-            }
-            
-            // Store the class name
-            $this->strClass = $val[0];
-            
-            // Store the method name
-            $this->strMethod = $val[1];
-        }
-        // If the val is an anonymous function
-        else if (is_callable($val))
-        {
-            // Store the function
-            $this->strAnonFunction = $val;
-        }
-        
-        return true;
+        // Store the route
+        $this->mixedRoute = $val;
+    
+        // Extract parameters
+        $this->extractParameters($key);
     }
     
     /**
@@ -149,16 +180,10 @@ class Router
      * @param bool $foundWildcards
      * @return boolean Returns true on success, false on error
      */
-    private function mapDynamicRoute($key, $val, $matches, $foundAction, $foundWildcards)
-    {
-        // If the val is a string name of a function
-        if (is_string($val))
-        {
-            // Store the function name
-            $this->strFunction = $val;
-        }
+    protected function mapDynamicRoute($key, $val, $matches, $foundAction, $foundWildcards)
+    {        
         // If the val is an array of class/method
-        else if (is_array($val))
+        if (is_array($val))
         {
             // Invalid size
             if (!$foundAction && count($val) != 2)
@@ -175,28 +200,25 @@ class Router
                 return false;
             }
     
-            // Store the class name
-            $this->strClass = $val[0];
-    
             // If the route has {action} in it and MUST be first
             if ($foundAction)
             {
-                // Set the method as the parameter specified by the user
-                $this->strMethod=$matches[1];
+                // Set the method as the parameter specified by the user                
+                $this->mixedRoute = array($val[0], $matches[1]);
             }
             else
             {
-                // Store the method name
-                $this->strMethod = $val[1];
+                $this->mixedRoute = array($val[0], $val[1]);
             }
         }
-        // If the val is an anonymous function
-        else if (is_callable($val))
+        else
         {
-            // Store the function
-            $this->strAnonFunction = $val;
+            $this->mixedRoute = $val;
         }
-    
+        
+        // Extract parameters
+        $this->extractParameters($key);
+
         // If the route has {action} in it and MUST be first
         if ($foundAction)
         {
@@ -214,7 +236,7 @@ class Router
      * @param bool $foundWildcards
      * @param array $matches
      */
-    private function mapAction($foundWildcards, $matches)
+    protected function mapAction($foundWildcards, $matches)
     {
         // If the route has {action} AND ** in it
         if ($foundWildcards)
@@ -230,8 +252,7 @@ class Router
         else
         {
             // Set the end of the matches as the parameters
-            unset($matches[0]);
-            unset($matches[1]);
+            unset($matches[0], $matches[1]);
             $this->arrParameters = array_values($matches);
         }
     }
@@ -241,7 +262,7 @@ class Router
      * @param bool $foundWildcards
      * @param array $matches
      */
-    private function mapNonAction($foundWildcards, $matches)
+    protected function mapNonAction($foundWildcards, $matches)
     {
         // I realize these next statements are the same, I'm
         // just keeping them in here in case I want to change
@@ -262,93 +283,344 @@ class Router
     }
 
     /**
-     * Map the route to a class and method
+     * Return the wildcard definitions
+     * @return array
+     */
+    protected function getWildcardDefinitions()
+    {
+        // Merge with user definitions
+        return array_merge(array(
+            '{action}'  => '([a-zA-Z0-9_]+)',
+            '{alpha}'   => '([a-zA-Z]+)',
+            '{int}'     => '([0-9]+)',
+            '*'         => '([a-zA-Z0-9-+_.%]+)',
+            '**'        => '([a-zA-Z0-9-+_.%/]+)',
+        ), $this->arrWildcardDefinitions);
+    }
+    
+    /**
+     * Map the URI to a callable entity
      * @param string $strURI
      */
     public function map($strURI)
     {
-        // Call a method before map
-        $this->beforeMap($strURI);
+        // Separate out the URI and Query String
+        $this->breakURI($strURI);
         
+        // Call a function before map        
+        $this->callHook($this::C_HOOK_BEFORE_MAP);
+
         // If a Static Route
-        // If the request is in the Routes array, set the Presenter and Method,
-        // but ignore the Parameters array
-        if (isset($this->arrRoutes[$strURI]) || isset($this->arrRoutes[$strURI.'/']))
+        // If the URI is in the Routes array, extract the route
+        if (isset($this->arrRoutes[$this->strURI]) || isset($this->arrRoutes[$this->strURI.'/']))
         {
-            $this->mapStaticRoute($strURI, $this->arrRoutes[$strURI]);
+            $this->mapStaticRoute($this->strURI, $this->arrRoutes[$this->strURI]);
         }
         // Else a Dynamic Route
         else
         {
-            // Regex match
-            $tokens = array(
-                '{action}' => '([a-zA-Z0-9_]+)',
-                '{string}' => '([a-zA-Z]+)',
-                '{integer}' => '([0-9]+)',
-                '*'  => '([a-zA-Z0-9-+_.%]+)',
-                '**'  => '([a-zA-Z0-9-+_.%/]+)',
-            );
-            
-            // This ensures {action} will be tested before {string}
-            ksort($this->arrRoutes);
-
             // Loop through each route
             foreach ($this->arrRoutes as $key=>$val)
-            {
-                $foundAction = false;
-                $foundWildcards = false;
-            
-                if (strpos($key, '{action}')!==false) $foundAction = true;
-                if (strpos($key, '**')!==false) $foundWildcards = true;
-
-                $pattern = strtr($key, $tokens);
-                if (preg_match('@^/?'.$pattern.'/?$@', $strURI, $matches))
+            {                
+                // If a match is found
+                if (preg_match('#^/?'.strtr($key, $this->getWildcardDefinitions()).'/?$#', $this->strURI, $matches))
                 {
-                    $this->mapDynamicRoute($key, $val, $matches, $foundAction, $foundWildcards);
-                    
+                    // Map the route
+                    $this->mapDynamicRoute($key,
+                        $val,
+                        $matches,
+                        (strpos($key, '{action}')!==false),
+                        (strpos($key, '**')!==false)
+                    );
                     break;
                 }
             }
         }
         
-        // Call a method after map
-        $this->afterMap();
+        // If the route is found
+        if ($this->mixedRoute !== false)
+        {
+            // Determine if the route is callable
+            $this->isRouteCallable();
+        }
+        
+        // Call a function after map
+        $this->callHook($this::C_HOOK_AFTER_MAP);
     }
     
     /**
-     * Return the discovered class
-     * @return string
+     * Sets override parameters if they are found
+     * @param string $pattern
      */
-    public function getMappedClass()
-    {
-        return $this->strClass;
+    protected function extractParameters($pattern)
+    {        
+        // If the override parameters exist
+        if (isset($this->arrParametersOverrideList[$pattern]))
+        {
+            // Set the override parameters
+            $this->arrParametersOverride = $this->arrParametersOverrideList[$pattern];
+        }
+        
+        // If the secondary parameters exist
+        if (isset($this->arrSecondaryParametersList[$pattern]))
+        {
+            // Set the secondary parameters
+            $this->arrSecondaryParameters = $this->arrSecondaryParametersList[$pattern];
+        }
     }
     
     /**
-     * Return the discovered method
-     * @return string
+     * Return the override parameters (if any)
+     * @return array()
      */
-    public function getMappedMethod()
+    public function getOverrideParameters()
     {
-        return $this->strMethod;
+        return $this->arrParametersOverride;
     }
     
     /**
-     * Return the discovered function
-     * @return string
+     * Determine if the route is callable
      */
-    public function getMappedFunction()
+    protected function isRouteCallable()
     {
-        return $this->strFunction;
+        if (!is_callable($this->mixedRoute))
+        {
+            // If a class method
+            if (is_array($this->mixedRoute))
+            {
+                $class = (isset($this->mixedRoute[0]) ? $this->mixedRoute[0] : 'MISSING');
+                $method = (isset($this->mixedRoute[1]) ? $this->mixedRoute[1] : 'MISSING');
+                $this->strError = "The class, $class, and method, $method, cannot be called.";
+            }
+            // Else if a function
+            else if (is_string($this->mixedRoute))
+            {
+                $this->strError = "The function, {$this->mixedRoute}, cannot be called.";
+            }
+            // Else is unsupported
+            else
+            {
+                $this->strError = 'The route type, '.gettype($this->mixedRoute).', is not supported.';
+                var_dump($this->mixedRoute);
+            }
+        }
     }
     
     /**
-     * Return the discovered anonymous function
-     * @return string
+     * Return the discovered route
+     * @return mixed (Array for class method, string for function, or closure)
      */
-    public function getMappedAnonFunction()
+    public function getRoute()
     {
-        return $this->strAnonFunction;
+        return $this->mixedRoute;
+    }
+    
+    /**
+     * Return the discovered route that can be used with call_user_func_array()
+     * @return mixed (Array for class method, string for function, or closure)
+     */
+    public function getCallableRoute()
+    {
+        if (is_array($this->mixedRoute) && count($this->mixedRoute) > 1)
+        {
+            return array(new $this->mixedRoute[0], $this->mixedRoute[1]);
+        }
+        else
+        {
+            return $this->mixedRoute;
+        }
+    }
+
+    /**
+     * Return the map type constant
+     * @return const Returns C_ROUTE_FOUND, C_ROUTE_NOT_FOUND, or C_ROUTE_ERROR
+     */
+    public function getMapType()
+    {
+        if ($this->strError !== '')
+        {
+            return $this::C_ROUTE_ERROR;
+        }
+        else if ($this->mixedRoute)
+        {
+            return $this::C_ROUTE_FOUND;
+        }
+        else
+        {
+            return $this::C_ROUTE_NOT_FOUND;
+        }
+    }
+    
+    /**
+     * Return if the route is mapped and callable
+     * @return bool
+     */
+    public function isRouteMapped()
+    {
+        return ($this->mixedRoute !== false && $this->strError === '');
+    }
+
+    /**
+     * Call the class method, function, or closure if found
+     */
+    public function dispatch($strURI)
+    {        
+        $this->map($strURI);
+
+        // Call a function before dispatch
+        $this->callHook($this::C_HOOK_BEFORE_DISPATCH);
+        
+        // Call the current map type
+        switch ($this->getMapType())
+        {
+            // Call the entity
+            case $this::C_ROUTE_FOUND:
+                $this->callHook($this::C_HOOK_DISPATCH);
+            break;
+            // Page is not found
+            case $this::C_ROUTE_NOT_FOUND:
+                $this->callHook($this::C_HOOK_NOT_FOUND);
+                break;
+            // Error occurred
+            case $this::C_ROUTE_ERROR:
+                $this->callHook($this::C_HOOK_ERROR);
+                break;
+        }
+        
+        // Call a function after dispatch
+        $this->callHook($this::C_HOOK_AFTER_DISPATCH);
+    }
+    
+    /**
+     * Calls the route
+     */
+    protected function hookDispatch()
+    {
+        call_user_func_array($this->getCallableRoute(), $this->getCallableParameters());
+    }
+    
+    /**
+     * Call this method when you are finished and then call unset() on the
+     * object to free memory from closures using an instance of class
+     */
+    public function destroy()
+    {
+        // Free the memory
+        foreach ($this as &$v)
+        {
+            $v = null;
+        }
+    }
+    
+    /**
+     * Set a wildcard and it's regex equivalent
+     * @param string $wildcard String like '{alphanum}'
+     * @param string $regex String like '([a-zA-Z0-9]+)'
+     */
+    public function setWildCardDefinition($wildcard, $regex)
+    {
+        $this->arrWildcardDefinitions[$wildcard] = $regex;
+    }
+    
+    /**
+     * Sets the secondary collection of wildcards and the regex equivalents
+     * Does not replace five defaults
+     * @param array Array of wildcard => regex 
+     */
+    public function setWildCardDefinitions(array $arrWildcardDefinitions)
+    {
+        $this->arrWildcardDefinitions = $arrWildcardDefinitions;
+    }
+    
+    /**
+     * Set a route
+     * @param string $pattern Example 'GET /foo' or 'POST /bar'
+     * @param mixed $route (Array for class method, string for function, or closure)
+     * @param array $arrOverrideParameters Array of objects or values to pass
+     */
+    public function setRoute($pattern, $route,
+        array $arrSecondaryParameters = array(),
+        array $arrOverrideParameters = array())
+    {        
+        // Store the route
+        $this->arrRoutes[$pattern] = $route;
+        
+        // If the secondary parameters are set
+        if ($arrSecondaryParameters)
+        {
+            // Store them with the same key
+            $this->arrSecondaryParametersList[$pattern] = $arrSecondaryParameters;
+        }
+        
+        // If the override parameters are set
+        if ($arrOverrideParameters)
+        {
+            // Store them with the same key
+            $this->arrParametersOverrideList[$pattern] = $arrOverrideParameters;
+        }
+    }
+    
+    /**
+     * Set the override parameters for a route
+     * @param string $pattern Example 'GET /foo' or 'POST /bar'
+     * @param array $arrParameters Array of objects or values to pass
+     */
+    public function setOverrideParameter($pattern, array $arrParameters)
+    {
+        // Store them with the same key
+        $this->arrParametersOverrideList[$pattern] = $arrParameters;
+    }
+    
+    /**
+     * Set the override parameters that will be passed to the routes
+     * as indexed arrays
+     * @param array $arrParameters Array of pattern => arrParameters
+     */
+    public function setOverrideParameters(array $arrParameters)
+    {
+        $this->arrParametersOverrideList = $arrParameters;
+    }
+    
+    /**
+     * Set a secondary parameter for a route
+     * @param string $pattern Example 'GET /foo' or 'POST /bar'
+     * @param array $arrParameters Array of objects or values to pass
+     */
+    public function setSecondaryParameter($pattern, array $arrParameters)
+    {
+        $this->arrSecondaryParametersList[$pattern] = $arrParameters;
+    }
+    
+    /**
+     * Set the secondary parameters that will be passed to the routes
+     * as indexed arrays
+     * @param array $arrParameters Array of pattern => arrParameters
+     */
+    public function setSecondaryParameters(array $arrParameters)
+    {
+        $this->arrSecondaryParametersList = $arrParameters;
+    }
+    
+    /**
+     * Set the routes
+     * @param array $arrRoutes
+     */
+    public function setRoutes(array $arrRoutes = array())
+    {
+        $this->arrRoutes = $arrRoutes;
+    }
+    
+    /**
+     * Store the URI and Query String
+     * @param string $strURI
+     */
+    protected function breakURI($strURI)
+    {
+        // Remove the query string
+        $this->strURI = $this->getRequestMethod().' '.current(explode('?', $strURI));
+        
+        // Parse the query string
+        parse_str(isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '', $this->arrQuery);
     }
     
     /**
@@ -361,161 +633,260 @@ class Router
     }
     
     /**
+     * Return the parameter logic
+     * @return array
+     */
+    protected function hookParameterLogic()
+    {
+        // If the override parameters are set
+        if ($this->getOverrideParameters())
+        {
+            // Return them
+            return array_merge($this->getOverrideParameters());
+        }
+        // Else
+        else
+        {
+            // Merge the parameters and secondary parameters
+            return array_merge(array($this), array_merge($this->getParameters(), $this->getSecondaryParameters()));
+        }
+    }
+    
+    /**
+     * Return the parameters prepared for the callable entity
+     * @return array
+     */
+    public function getCallableParameters()
+    {
+        return $this->callHook($this::C_HOOK_PARAMETER_LOGIC);
+    }
+    
+    /**
      * Return the URL parameters (if any)
      * @return array
      */
     public function getParameters()
-    {
+    {        
+        // Return standard parameters
         return $this->arrParameters;
     }
-
+    
     /**
-     * Return the map type constant
-     * @return const
+     * Return the secondary parameters (if any)
+     * @return array()
      */
-    public function getMapType()
+    public function getSecondaryParameters()
     {
-        if ($this->strError !== '')
-        {
-            return $this::C_ERROR;
-        }
-        else if ($this->strClass !== '' && $this->strMethod !== '')
-        {
-            return $this::C_CLASSMETHOD;
-        }
-        else if ($this->strFunction !== '')
-        {
-            return $this::C_FUNCTION;
-        }
-        else if ($this->strAnonFunction !== '')
-        {
-            return $this::C_ANONFUNCTION;
-        }
-        else
-        {
-            return $this::C_NOTFOUND;
-        }
+        return $this->arrSecondaryParameters;
     }
     
     /**
-     * Return if the route is mapped
-     * @return bool
+     * Return the URL parameter from array or returns $default
+     * Uses the getCallableParameters() array
+     * @param int $int
+     * @param mixed $default
+     * @return mixed
      */
-    public function isRouteMapped()
+    public function getParameter($int, $default = null)
     {
-        return (($this->strClass !== '' && $this->strMethod !== '') || ($this->strFunction !== '') || $this->strAnonFunction !== '');
+        // Return the parameters
+        return (isset($this->getCallableParameters()[$int]) ? $this->getCallableParameters()[$int] : $default);
     }
-
+    
     /**
-     * Call the class method, function, or anonymous function if found
+     * Returns the request method (GET, HEAD, POST, PUT, DELETE, OPTIONS,
+     * PATCH, TRACE, CONNECT) or the X-HTTP-METHOD-OVERRIDE if it's a POST
+     * request
+     * 
+     *  Headers will send: X-HTTP-METHOD-OVERRIDE
+     * $_SERVER will show: HTTP_X_HTTP_METHOD_OVERRIDE
+     * 
+     * @return string
      */
-    public function dispatch($strURI)
+    public function getRequestMethod()
+    {
+        // Get the request method
+        $requestMethod = strtoupper(isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET');
+        
+        // Set the request method to the method override if it exists
+        return strtoupper($requestMethod == 'POST' && isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])
+            ? $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']
+            : $requestMethod
+        );
+    }
+    
+    /**
+     * Is the request a POST?
+     * @return boolean
+     */
+    public function isPOST()
+    {
+        return ($this->getRequestMethod() == 'POST' ? true : false);
+    }
+    
+    /**
+     * Is the request a GET?
+     * @return boolean
+     */
+    public function isGET()
+    {
+        return ($this->getRequestMethod() == 'GET' ? true : false);
+    }
+    
+    /**
+     * Is the request a HEAD?
+     * @return boolean
+     */
+    public function isHEAD()
+    {
+        return ($this->getRequestMethod() == 'HEAD' ? true : false);
+    }
+    
+    /**
+     * Is the request a PUT?
+     * @return boolean
+     */
+    public function isPUT()
+    {
+        return ($this->getRequestMethod() == 'PUT' ? true : false);
+    }
+    
+    /**
+     * Is the request a DELETE?
+     * @return boolean
+     */
+    public function isDELETE()
+    {
+        return ($this->getRequestMethod() == 'DELETE' ? true : false);
+    }
+    
+    /**
+     * Is the request an OPTIONS?
+     * @return boolean
+     */
+    public function isOPTIONS()
+    {
+        return ($this->getRequestMethod() == 'OPTIONS' ? true : false);
+    }
+    
+    /**
+     * Is the request a PATCH?
+     * @return boolean
+     */
+    public function isPATCH()
+    {
+        return ($this->getRequestMethod() == 'PATCH' ? true : false);
+    }
+    
+    /**
+     * Is the request a TRACE?
+     * @return boolean
+     */
+    public function isTRACE()
+    {
+        return ($this->getRequestMethod() == 'TRACE' ? true : false);
+    }
+    
+    /**
+     * Is the request a CONNECT?
+     * @return boolean
+     */
+    public function isCONNECT()
+    {
+        return ($this->getRequestMethod() == 'CONNECT' ? true : false);
+    }
+    
+    /**
+     * Return the URL query string
+     * @return array
+     */
+    public function getQueryString()
+    {
+        return join('&', $this->arrQuery);
+    }
+    
+    /**
+     * Return the query string parameter from array by key
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getQuery($key, $default = null)
+    {
+        return (isset($this->arrQuery[$key]) ? $this->arrQuery[$key] : $default);
+    }
+    
+    /**
+     * Set a route that runs at a specific time
+     * 
+     * Called route will be passed a reference of current class
+     * 
+     * @param constant $name Name of the hook (C_HOOK_BEFORE_MAP, C_HOOK_AFTER_MAP,
+     * C_HOOK_BEFORE_DISPATCH, C_HOOK_AFTER_DISPATCH, C_HOOK_NOT_FOUND, C_HOOK_ERROR)
+     * @param mixed (Array for class method, string for function, or closure)
+     */
+    public function setHook($name, $route)
     {        
-        $this->map($strURI);
-        
-        $this->beforeDispatch();
-        
-        // Call the current map type
-        switch ($this->getMapType())
+        $this->hooks[$name] = $route;
+    }
+    
+    /**
+     * Sets an array of hooks that run at a specific time
+     *
+     * Called route will be passed a reference of current class
+     *
+     * @param constant $name Name of the hook (C_HOOK_BEFORE_MAP, C_HOOK_AFTER_MAP,
+     * C_HOOK_BEFORE_DISPATCH, C_HOOK_AFTER_DISPATCH, C_HOOK_NOT_FOUND, C_HOOK_ERROR)
+     * @param mixed (Array for class method, string for function, or closure)
+     */
+    public function setHooks(array $arrHooks)
+    {
+        $this->hooks = $arrHooks;
+    }
+    
+    /**
+     * Call the hook
+     * @param string $name Name of hook
+     */
+    protected function callHook($name)
+    {
+        // If the hook exists
+        if (isset($this->hooks[$name]))
         {
-            // Page is not found
-        	case $this::C_NOTFOUND:
-        	    $this->showNotFound();
-    	        break;
-	        // Call Class and Method 
-            case $this::C_CLASSMETHOD:
-                $class = $this->getMappedClass();
-                $method = $this->getMappedMethod();
-               
-                if (!method_exists($class, $method))
-                {
-                    $this->strError = "The class, $class, and method, $method, cannot be found.";
-
-                }
-                else if (!is_callable(array($class, $method)))
-                {
-                    $this->strError = "The class, $class, and method, $method, cannot be called.";
-                }
-                else
-                {
-                    call_user_func_array(array(new $class, $method), $this->getParameters());
-                }
-                break;
-            // Call Function
-            case $this::C_FUNCTION:
-                $function = $this->getMappedFunction();
-               
-                if (!is_callable($function))
-                {
-                    $this->strError = "The function, $function, cannot be found.";
-                }
-                else
-                {
-                    call_user_func_array($this->getMappedFunction(), $this->getParameters());
-                }
-                break;
-            // Call Anonymous Function
-             case $this::C_ANONFUNCTION:
-                call_user_func_array($this->getMappedAnonFunction(), $this->getParameters());
-                break;
+            // If the hook is callable
+            if (is_callable($this->hooks[$name]))
+            {
+                // Call the hook
+                return call_user_func_array($this->hooks[$name], array(&$this));
+            }
+            // Else the hook is not callable
+            else
+            {
+                // Set the error message
+                $this->strError = "The hook, $name, is not callable.";
+            }
         }
-        
-        // If an error occured
-        if ($this->strError !== '')
+        // Else if the class method exists
+        else if (is_callable(array($this, $name)))
         {
-            $this->showError();
+            // Call the class method
+            return call_user_func_array(array($this, $name), array(&$this));
         }
-        
-        $this->afterDispatch();
     }
     
     /**
-     * Extensible method called before mapping
-     * @param string $strURI
+     * Display not found message (HTTP Code 404)
      */
-    private function beforeMap(&$strURI)
-    {
-        // Remove the query string
-        $strURI = current(explode('?', $strURI));
-    }
-    
-    /**
-     * Extensible method called after mapping
-     */
-    private function afterMap()
-    {
-        
-    }
-    
-    /**
-     * Extensible method called before dispatching
-     */
-    private function beforeDispatch()
-    {
-        
-    }
-    
-    /**
-     * Extensible method called after dispatching
-     */
-    private function afterDispatch()
-    {
-        
-    }
-    
-    /**
-     * Extensible method called when the route is not found
-     */
-    public function showNotFound()
+    protected function hookNotFound()
     {
         echo 'Not Found';
         header("HTTP/1.0 404 Not Found");
     }
     
     /**
-     * Extensible method called when an error occurs with the routing component
+     * Display error message (HTTP Code 500)
      */
-    public function showError()
+    protected function hookError()
     {        
         echo 'Error: '.$this->strError;
         header('HTTP/1.0 500 Internal Server Error');
