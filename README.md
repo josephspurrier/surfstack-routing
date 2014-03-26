@@ -72,7 +72,7 @@ instance of the Router.
 $router = new SurfStack\Routing\Router();
 ```
 
-## Construction of a Route
+## Creating a Route
 
 You can set a route two different ways.
 
@@ -138,14 +138,14 @@ There are two way to dispatch. You can go the automatic route which provides
 you with a collection of hooks to tailor the behavior to your needs or the
 manual route where you control it all yourself. 
 
-The easy way: Automatic Dispatching
+Automatic Dispatching
 
 ```php
 // Pass the user requested URL and it does the work for you
 $router->dispatch('/foo');
 ```
 
-Or the other way: Manual Dispatching
+Manual Dispatching
 
 ```php
 // Pass the user requested URL
@@ -202,7 +202,7 @@ $router->setHook($router::C_HOOK_AFTER_DISPATCH, function ($r) {
 
 ## Secondary and Override Parameters
 
-SurfStack Framework provides you with the ability to set secondary and override
+SurfStack Router provides you with the ability to set secondary and override
 parameters. If you have a class that needs certains parameters passed to them,
 you can assign the secondary parameters to the same route. These
 secondary parameters will be merged with the parameters extracted from the
