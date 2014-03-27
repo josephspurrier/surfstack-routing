@@ -34,6 +34,10 @@ The router also supports the X-HTTP-METHOD-OVERRIDE header for the webservers
 that don't allow HTTP operations like PUT and DELETE.
 
 ## Tutorial Requirements
+
+You'll need to set up your web server to route requests to your index.php. You
+can use configurations for Apache and Nginx on the [Web Server Setup Wiki page](../../wiki/Web-Server-Setup).
+
 For this tutorial, we'll we reference a class called: SurfStack\Test\TestClass.
 The class will have two methods called: foo and bar.
 There will also be a function called: testFunction.
@@ -74,7 +78,13 @@ $router = new SurfStack\Routing\Router();
 
 ## Creating a Route
 
-You can set a route two different ways.
+You can set a route two different ways. The first piece should contain
+an HTTP request method and URI separated by a space. The are case sensitive.
+Any HTTP request method can be used (GET, HEAD, POST, PUT, DELETE, OPTIONS,
+PATCH, TRACE, CONNECT) as well as the wildard, ANY, which has a lower prority.
+The URI should start with a slash. Only add a slash to the end if you want to
+require a slash to access the page. A route URI of /foo will match both /foo
+and /foo/ from your browser.
 
 ```php
 // Single route
@@ -173,7 +183,7 @@ else
 
 ## Hooks
 
-There are 10 hooks you can utilize if you choose the automatic dispatching. 
+There are 10 hooks you can utilize if you choose automatic dispatching. 
 Manual dispatching only uses the first 3 hooks. They are called in this order:
 * $router::C_HOOK_BEFORE_MAP
 * $router::C_HOOK_ROUTE_VALIDATION

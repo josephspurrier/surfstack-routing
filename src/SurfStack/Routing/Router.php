@@ -157,6 +157,12 @@ class Router
     protected $strURI;
     
     /**
+     * Request URI with ANY request method
+     * @var string
+     */
+    protected $strURIAny;
+    
+    /**
      * Hook closures
      * @var array
      */
@@ -178,9 +184,6 @@ class Router
     {
         // Store the route
         $this->mixedRoute = $val;
-    
-        // Extract parameters
-        $this->extractParameters($key);
     }
     
     /**
@@ -227,9 +230,6 @@ class Router
         {
             $this->mixedRoute = $val;
         }
-        
-        // Extract parameters
-        $this->extractParameters($key);
 
         // If the route has {action} in it and MUST be first
         if ($foundAction)
@@ -324,9 +324,20 @@ class Router
 
         // If a Static Route
         // If the URI is in the Routes array, extract the route
-        if (isset($this->arrRoutes[$this->strURI]) || isset($this->arrRoutes[$this->strURI.'/']))
+        if (isset($this->arrRoutes[$this->strURI]))
         {
-            $this->mapStaticRoute($this->strURI, $this->arrRoutes[$this->strURI]);
+            $this->mapStaticRoute($this->strURI, $this->arrRoutes[$this->strURI]);            
+
+            // Extract parameters
+            $this->extractParameters($this->strURI, $this->strURIAny);
+        }
+        // Else If the URI with ANY is in the Routes array, extract the route
+        else if (isset($this->arrRoutes[$this->strURIAny]))
+        {
+            $this->mapStaticRoute($this->strURIAny, $this->arrRoutes[$this->strURIAny]);
+            
+            // Extract parameters
+            $this->extractParameters($this->strURI, $this->strURIAny);
         }
         // Else a Dynamic Route
         else
@@ -335,7 +346,8 @@ class Router
             foreach ($this->arrRoutes as $key=>$val)
             {                
                 // If a match is found
-                if (preg_match('#^/?'.strtr($key, $this->getWildcardDefinitions()).'/?$#', $this->strURI, $matches))
+                if (preg_match('#^/?'.strtr($key, $this->getWildcardDefinitions()).'/?$#', $this->strURI, $matches)
+                    || preg_match('#^/?'.strtr($key, $this->getWildcardDefinitions()).'/?$#', $this->strURIAny, $matches))
                 {
                     // Map the route
                     $this->mapDynamicRoute($key,
@@ -344,6 +356,11 @@ class Router
                         (strpos($key, '{action}')!==false),
                         (strpos($key, '**')!==false)
                     );
+                    
+                    // Extract parameters
+                    $arrURI = explode(' ', $key);
+                    $this->extractParameters($this->getRequestMethod().' '.$arrURI[1], 'ANY '.$arrURI[1]);
+                    
                     break;
                 }
             }
@@ -364,7 +381,7 @@ class Router
      * Sets override parameters if they are found
      * @param string $pattern
      */
-    protected function extractParameters($pattern)
+    protected function extractParameters($pattern, $patternAny)
     {        
         // If the override parameters exist
         if (isset($this->arrParametersOverrideList[$pattern]))
@@ -372,12 +389,22 @@ class Router
             // Set the override parameters
             $this->arrParametersOverride = $this->arrParametersOverrideList[$pattern];
         }
+        else if (isset($this->arrParametersOverrideList[$patternAny]))
+        {
+            // Set the override parameters
+            $this->arrParametersOverride = $this->arrParametersOverrideList[$patternAny];
+        }
         
         // If the secondary parameters exist
         if (isset($this->arrSecondaryParametersList[$pattern]))
         {
             // Set the secondary parameters
             $this->arrSecondaryParameters = $this->arrSecondaryParametersList[$pattern];
+        }
+        else if (isset($this->arrSecondaryParametersList[$patternAny]))
+        {
+            // Set the secondary parameters
+            $this->arrSecondaryParameters = $this->arrSecondaryParametersList[$patternAny];
         }
     }
     
@@ -658,6 +685,9 @@ class Router
     {
         // Remove the query string
         $this->strURI = $this->getRequestMethod().' '.current(explode('?', $strURI));
+        
+        // Create an ANY wildcard
+        $this->strURIAny = 'ANY '.current(explode('?', $strURI));
         
         // Parse the query string
         parse_str(isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '', $this->arrQuery);

@@ -739,6 +739,80 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($a->isTRACE());
     }
     
+    public function testAnyStatic()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $method = 'foo';
+    
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+    
+        // Pass single of route
+        $a->setRoute('ANY /foo', array($class, $method));
+    
+        // Pass URL
+        $a->map('/foo?def');
+    
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertSame($a->getParameters(), array());
+    
+        // Check trues
+        $this->assertTrue($a->isPOST());
+        $this->assertFalse($a->isGET());
+        $this->assertFalse($a->isHEAD());
+        $this->assertFalse($a->isPATCH());
+        $this->assertFalse($a->isDELETE());
+        $this->assertFalse($a->isPUT());
+        $this->assertFalse($a->isOPTIONS());
+        $this->assertFalse($a->isCONNECT());
+        $this->assertFalse($a->isTRACE());
+    }
+    
+    public function testAnyDynamic()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $method = 'foo';
+    
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+    
+        // Pass single of route
+        $a->setRoute('ANY /foo/*', array($class, $method));
+    
+        // Pass URL
+        $a->map('/foo/abc?def');
+    
+        // Should find route
+        $this->assertTrue($a->isRouteMapped());
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertSame($a->getParameters(), array('abc'));
+    
+        // Check trues
+        $this->assertTrue($a->isPOST());
+        $this->assertFalse($a->isGET());
+        $this->assertFalse($a->isHEAD());
+        $this->assertFalse($a->isPATCH());
+        $this->assertFalse($a->isDELETE());
+        $this->assertFalse($a->isPUT());
+        $this->assertFalse($a->isOPTIONS());
+        $this->assertFalse($a->isCONNECT());
+        $this->assertFalse($a->isTRACE());
+    }
+    
     public function testPostNotGet()
     {
         // Create an instance
@@ -798,6 +872,246 @@ class RouterTest extends PHPUnit_Framework_TestCase
         ));
         
         $a->setOverrideParameter($pattern, array('override1'));
+    
+        // Pass URL
+        $a->dispatch('/foo?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnySame()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param == 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        $pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            $pattern => $closure,
+        ));
+    
+        $a->setOverrideParameter($pattern, array('override1'));
+    
+        // Pass URL
+        $a->dispatch('/foo?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnyDifferent()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param == 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        //$pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo' => $closure,
+        ));
+    
+        $a->setOverrideParameter('ANY /foo', array('override1'));
+    
+        // Pass URL
+        $a->dispatch('/foo?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnyDifferentSwitch()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param == 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        //$pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'ANY /foo' => $closure,
+        ));
+    
+        $a->setOverrideParameter('GET /foo', array('override1'));
+    
+        // Pass URL
+        $a->dispatch('/foo?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnyDifferentSwitchPriority()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param == 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        //$pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'ANY /foo' => $closure,
+        ));
+    
+        // This is get priority
+        $a->setOverrideParameter('GET /foo', array('override1'));
+        // This will NOT get priority
+        $a->setOverrideParameter('ANY /foo', array('override2'));
+    
+        // Pass URL
+        $a->dispatch('/foo?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnyDifferentSwitchDynamicPriority()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param == 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        //$pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'ANY /foo/*' => $closure,
+        ));
+    
+        // This will get priority
+        $a->setOverrideParameter('GET /foo/*', array('override1'));
+        // This will NOT get priority
+        $a->setOverrideParameter('ANY /foo/*', array('override2'));
+    
+        // Pass URL
+        $a->dispatch('/foo/test?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnyDifferentDynamicPriority()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param == 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        //$pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo/*' => $closure,
+        ));
+    
+        // This will get priority
+        $a->setOverrideParameter('GET /foo/*', array('override1'));
+        // This will NOT get priority
+        $a->setOverrideParameter('ANY /foo/*', array('override2'));
+    
+        // Pass URL
+        $a->dispatch('/foo/test?def');
+    
+        // Get the mapped type
+        $this->assertSame($a->getMapType(), $a::C_ROUTE_FOUND);
+    
+        // Get the parameters
+        $this->assertTrue($test);
+    }
+    
+    public function testOverrideOutsideAnyDifferentSwitchFail()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $test = false;
+    
+        $closure = function ($param) use (&$test) {
+            if ($param !== 'override1')
+            {
+                $test = true;
+            }
+        };
+    
+        //$pattern = 'ANY /foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'ANY /foo' => $closure,
+        ));
+    
+        $a->setOverrideParameter('POST /foo', array('override1'));
     
         // Pass URL
         $a->dispatch('/foo?def');
