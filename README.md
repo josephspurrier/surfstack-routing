@@ -36,7 +36,7 @@ that don't allow HTTP operations like PUT and DELETE.
 ## Tutorial Requirements
 
 You'll need to set up your web server to route requests to your index.php. You
-can use configurations for Apache and Nginx on the [Web Server Setup Wiki page](../../wiki/Web-Server-Setup).
+can use configurations from the [Apache and Nginx Configurations](http://josephspurrier.com/apache-nginx-configurations/) page.
 
 For this tutorial, we'll we reference a class called: SurfStack\Test\TestClass.
 The class will have two methods called: foo and bar.
@@ -66,6 +66,38 @@ function testFunction()
 
 ```
 
+## Case Sensitivity
+
+The route patterns are case sensitive. The routes are case insensitive. Here is why:
+
+PHP is a mixed bag when it comes to case sensitivity. Here's an excerpt from [The Echoplex](http://the-echoplex.net/log/php-case-sensitivity).
+
+> Case sensitive (both user defined and PHP defined)
+> * variables
+> * constants
+> * array keys
+> * class properties
+> * class constants
+> Case insensitive (both user defined and PHP defined)
+> * functions
+> * class constructors
+> * class methods
+> * keywords and constructs (if, else, null, foreach, echo etc.)
+
+And depending on the file system (more imporantly than the operating system), files and directories may or may not be case sensitive.
+Windows uses NTFS and FAT32 which are not case sensitive. Linux uses ext3 and ext4 which are case sensitive. Mac OS X uses HFS+ which
+is not case sensitive by default, but allows you to enable case sensitivity.
+
+Web servers will serve files based on the case of the file system. The [Apache and Nginx Configurations](http://josephspurrier.com/apache-nginx-configurations/) has
+configurations that are case insensitive, but they still cannot find files and directories on a case sensitive file system if the request
+uses the wrong case. If you really need this functionality, a check should be made via index.php to determine if a different case of the
+filename exists.
+
+Now for URLs. Here is an excerpt from the [World Wide Web Consortium (W3C)](http://www.w3.org/TR/WD-html40-970708/htmlweb.html):
+> URLs in general are case-sensitive (with the exception of machine names). There may be URLs, or parts of URLs, where case doesn't matter, but identifying these may not be easy. Users should always consider that URLs are case-sensitive.
+
+
+
 ## Creating an Instance of the Router Class
 
 The first step you'll need to take in order to use the class is to create an
@@ -78,8 +110,10 @@ $router = new SurfStack\Routing\Router();
 
 ## Creating a Route
 
-You can set a route two different ways. The first piece should contain
-an HTTP request method and URI separated by a space. The are case sensitive.
+You can set a route two different ways. The pattern should contain
+an HTTP request method and URI separated by a space. It is case sensitive
+by default, but you can treat it as a regular expression and use (?i). The
+pattern can be treated as a Perl Compatible Regular Expression (PCRE).
 Any HTTP request method can be used (GET, HEAD, POST, PUT, DELETE, OPTIONS,
 PATCH, TRACE, CONNECT) as well as the wildard, ANY, which has a lower prority.
 The URI should start with a slash. Only add a slash to the end if you want to
@@ -87,8 +121,11 @@ require a slash to access the page. A route URI of /foo will match both /foo
 and /foo/ from your browser.
 
 ```php
-// Single route
+// Single route (case sensitive)
 $router->setRoute('GET /foo', array('SurfStack\Test\TestClass', 'foo'));
+
+// Single route (case insensitive)
+$router->setRoute('GET /(?i)foo', array('SurfStack\Test\TestClass', 'foo'));
 
 // Collection of routes
 $router->setRoutes(array(
@@ -118,7 +155,7 @@ very careful because the parameters will overlap. See the tests for more
 information.
 
 ```php
-// Dynamic Route accepts many URL
+// Dynamic Route accepts many URLs
 $router->setRoute('GET /foo/{int}', array('SurfStack\Test\TestClass', 'foo'));
 
 // Dynamic Action Route selects the method based off the parameter
