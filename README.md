@@ -146,7 +146,7 @@ the allowance of slashes (only for those who want to chop up the
 URL themselves). The {action} only works if the route is a class and allows any
 method name in the class to be used.
 
-Special considerations: Since the SurfStack router allows for multiple regex,
+**Special considerations:** Since the SurfStack router allows for multiple regex,
 there are additional restrictions. The {action} and ** can only exist once in
 the pattern. All the other wildcards can exist without restrictions. The 
 {action} MUST be the first wildcard if it is used. If ** is not used last, be
