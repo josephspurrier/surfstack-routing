@@ -78,6 +78,7 @@ PHP is a mixed bag when it comes to case sensitivity. Here's an excerpt from [Th
 > * array keys
 > * class properties
 > * class constants
+
 > Case insensitive (both user defined and PHP defined)
 > * functions
 > * class constructors
@@ -88,15 +89,13 @@ And depending on the file system (more imporantly than the operating system), fi
 Windows uses NTFS and FAT32 which are not case sensitive. Linux uses ext3 and ext4 which are case sensitive. Mac OS X uses HFS+ which
 is not case sensitive by default, but allows you to enable case sensitivity.
 
-Web servers will serve files based on the case of the file system. The [Apache and Nginx Configurations](http://josephspurrier.com/apache-nginx-configurations/) has
-configurations that are case insensitive, but they still cannot find files and directories on a case sensitive file system if the request
+Web servers will serve files based on the case of the file system. The [Apache and Nginx Configurations](http://josephspurrier.com/apache-nginx-configurations/)
+page has configurations that are case insensitive, but they still cannot find files and directories on a case sensitive file system if the request
 uses the wrong case. If you really need this functionality, a check should be made via index.php to determine if a different case of the
 filename exists.
 
 Now for URLs. Here is an excerpt from the [World Wide Web Consortium (W3C)](http://www.w3.org/TR/WD-html40-970708/htmlweb.html):
 > URLs in general are case-sensitive (with the exception of machine names). There may be URLs, or parts of URLs, where case doesn't matter, but identifying these may not be easy. Users should always consider that URLs are case-sensitive.
-
-
 
 ## Creating an Instance of the Router Class
 
