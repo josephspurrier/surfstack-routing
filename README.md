@@ -124,9 +124,6 @@ and /foo/ from your browser.
 The route (parameter 2) should contain either a string, an array, or a closure.
 The string should be a function name (or static method call) and the array should
 contain a class and method.
-Don't try and use an object as a route because eager loading is generally discouraged
-in routes so objects are not allowed. Lazy loading (with a closure) is the
-preferred method to limit resource consumption.
 
 ```php
 // Single route (case sensitive)
