@@ -109,7 +109,9 @@ $router = new SurfStack\Routing\Router();
 
 ## Creating a Route
 
-You can set a route two different ways. The pattern should contain
+You can set a route with setRoute() or setRoutes().
+
+The pattern (parameter 1) should contain
 an HTTP request method and URI separated by a space. It is case sensitive
 by default, but you can treat it as a regular expression and use (?i). The
 pattern can be treated as a Perl Compatible Regular Expression (PCRE).
@@ -118,6 +120,13 @@ PATCH, TRACE, CONNECT) as well as the wildard, ANY, which has a lower prority.
 The URI should start with a slash. Only add a slash to the end if you want to
 require a slash to access the page. A route URI of /foo will match both /foo
 and /foo/ from your browser.
+
+The route (parameter 2) should contain either a string, an array, or a closure.
+The string should be a function name (or static method call) and the array should
+contain a class and method.
+Don't try and use an object as a route because eager loading is generally discouraged
+in routes so objects are not allowed. Lazy loading (with a closure) is the
+preferred method to limit resource consumption.
 
 ```php
 // Single route (case sensitive)

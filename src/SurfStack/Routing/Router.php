@@ -401,8 +401,9 @@ class Router
         // Get the raw route
         $route = $this->getRoute();
         
-        // If the route is not callable
-        if (!is_callable($route))
+        // If the route is not callable or is an object that is not a closure
+        if (!is_callable($route)
+        || (!($route instanceof \Closure) && is_object($route)))
         {
             // If a class method
             if (is_array($route))
@@ -453,7 +454,8 @@ class Router
         // If the route contains two items and is a callable class method
         if (is_array($route)
         && count($route) == 2
-        && method_exists($route[0], $route[1]))
+        && method_exists($route[0], $route[1])
+        && is_string($route[0]))
         {
             // Return a usable array for static and non-static methods
             return array(new $route[0], $route[1]);
