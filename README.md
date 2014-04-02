@@ -7,7 +7,7 @@ well as for those that need a solid foundation for their website.
 
 It's 100% ready to go for those that don't need any customization and wide open
 for those that want to hook into the pre/post mapping, pre/post dispatching,
-errors, and even the dispatching piece itself. One of the differences between
+and even the dispatching piece itself. One of the differences between
 frameworks is the way methods and functions output data to the screen. Some
 prefer you use a return statement while others use echo and print statements;
 neither of these are an issue for the SurfStack Router. You have control over
