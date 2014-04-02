@@ -181,12 +181,12 @@ class Router
         if (is_array($val))
         {
             // Invalid size
-            if (!$foundAction && count($val) != 2)
+            if (!$foundAction && count($val) < 2)
             {
                 throw new \BadMethodCallException("The key, $key, must have an array with 2 values: class name and method name.");
             }
             // Invalid size
-            else if ($foundAction && count($val) != 1)
+            else if ($foundAction && count($val) > 1)
             {
                 throw new \BadMethodCallException("The key, $key, must have an array with 1 value: class name.");
             }
