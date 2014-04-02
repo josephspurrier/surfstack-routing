@@ -31,12 +31,6 @@ class Router
     CONST C_ROUTE_NOT_FOUND = 'Route_Not_Found';
     
     /**
-     * Route resulted in an error
-     * @var string
-     */
-    CONST C_ROUTE_ERROR = 'Route_Error';
-    
-    /**
      * Function called before map()
      * @var string
      */
@@ -166,7 +160,6 @@ class Router
      * Maps the static route to variables
      * @param string $key
      * @param mixed $val
-     * @return boolean Returns true on success, false on error
      */
     protected function mapStaticRoute($key, $val)
     {
@@ -181,7 +174,6 @@ class Router
      * @param array $matches
      * @param bool $foundAction
      * @param bool $foundWildcards
-     * @return boolean Returns true on success, false on error
      */
     protected function mapDynamicRoute($key, $val, $matches, $foundAction, $foundWildcards)
     {        
@@ -484,7 +476,7 @@ class Router
 
     /**
      * Return the map type constant
-     * @return const Returns C_ROUTE_FOUND, C_ROUTE_NOT_FOUND, or C_ROUTE_ERROR
+     * @return const Returns C_ROUTE_FOUND or C_ROUTE_NOT_FOUND
      */
     public function getMapType()
     {
