@@ -73,12 +73,6 @@ class Router
     CONST C_HOOK_NOT_FOUND = 'hookNotFound';
     
     /**
-     * Function called during dispatch() 
-     * @var string
-     */
-    CONST C_HOOK_ERROR = 'hookError';
-    
-    /**
      * Function called by getCallableParameters()
      * @var string
      */
@@ -145,12 +139,6 @@ class Router
     protected $arrWildcardDefinitions = array();
     
     /**
-     * Error message if occured
-     * @var string
-     */
-    protected $strError = '';
-    
-    /**
      * Request URI
      * @var string
      */
@@ -203,16 +191,12 @@ class Router
             // Invalid size
             if (!$foundAction && count($val) != 2)
             {
-                $this->strError = "The key, $key, must have an array with 2 values: class name and method name.";
-    
-                return false;
+                throw new \BadMethodCallException("The key, $key, must have an array with 2 values: class name and method name.");
             }
             // Invalid size
             else if ($foundAction && count($val) != 1)
             {
-                $this->strError = "The key, $key, must have an array with 1 value: class name.";
-    
-                return false;
+                throw new \BadMethodCallException("The key, $key, must have an array with 1 value: class name.");
             }
     
             // If the route has {action} in it and MUST be first
@@ -425,7 +409,7 @@ class Router
         // Get the raw route
         $route = $this->getRoute();
         
-        // If the route is callable
+        // If the route is not callable
         if (!is_callable($route))
         {
             // If a class method
@@ -433,17 +417,17 @@ class Router
             {
                 $class = (isset($route[0]) ? $route[0] : 'MISSING');
                 $method = (isset($route[1]) ? $route[1] : 'MISSING');
-                $this->strError = "The class, $class, and method, $method, cannot be called.";
+                throw new \BadMethodCallException("The class, $class, and method, $method, cannot be called.");
             }
-            // Else if a function
+            // Else if a string
             else if (is_string($route))
             {
-                $this->strError = "The function, $route, cannot be called.";
+                throw new \BadFunctionCallException("The function, $route, cannot be called.");
             }
             // Else is unsupported
             else
             {
-                $this->strError = 'The route type, '.gettype($route).', is not supported.';
+                throw new \UnexpectedValueException('The route type, '.gettype($route).', is not supported.');
             }
         }
     }
@@ -504,11 +488,7 @@ class Router
      */
     public function getMapType()
     {
-        if ($this->strError !== '')
-        {
-            return $this::C_ROUTE_ERROR;
-        }
-        else if ($this->mixedRoute)
+        if ($this->isRouteMapped())
         {
             return $this::C_ROUTE_FOUND;
         }
@@ -524,7 +504,7 @@ class Router
      */
     public function isRouteMapped()
     {
-        return ($this->mixedRoute !== false && $this->strError === '');
+        return ($this->mixedRoute !== false);
     }
 
     /**
@@ -547,10 +527,6 @@ class Router
             // Page is not found
             case $this::C_ROUTE_NOT_FOUND:
                 $this->callHook($this::C_HOOK_NOT_FOUND);
-                break;
-            // Error occurred
-            case $this::C_ROUTE_ERROR:
-                $this->callHook($this::C_HOOK_ERROR);
                 break;
         }
         
@@ -691,15 +667,6 @@ class Router
         
         // Parse the query string
         parse_str(isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '', $this->arrQuery);
-    }
-    
-    /**
-     * Return the error message
-     * @return string
-     */
-    public function getError()
-    {
-        return $this->strError;
     }
     
     /**
@@ -894,7 +861,7 @@ class Router
      * Called route will be passed a reference of current class
      * 
      * @param constant $name Name of the hook (C_HOOK_BEFORE_MAP, C_HOOK_AFTER_MAP,
-     * C_HOOK_BEFORE_DISPATCH, C_HOOK_AFTER_DISPATCH, C_HOOK_NOT_FOUND, C_HOOK_ERROR)
+     * C_HOOK_BEFORE_DISPATCH, C_HOOK_AFTER_DISPATCH, C_HOOK_NOT_FOUND)
      * @param mixed (Array for class method, string for function, or closure)
      */
     public function setHook($name, $route)
@@ -908,7 +875,7 @@ class Router
      * Called route will be passed a reference of current class
      *
      * @param constant $name Name of the hook (C_HOOK_BEFORE_MAP, C_HOOK_AFTER_MAP,
-     * C_HOOK_BEFORE_DISPATCH, C_HOOK_AFTER_DISPATCH, C_HOOK_NOT_FOUND, C_HOOK_ERROR)
+     * C_HOOK_BEFORE_DISPATCH, C_HOOK_AFTER_DISPATCH, C_HOOK_NOT_FOUND)
      * @param mixed (Array for class method, string for function, or closure)
      */
     public function setHooks(array $arrHooks)
@@ -935,7 +902,7 @@ class Router
             else
             {
                 // Set the error message
-                $this->strError = "The hook, $name, is not callable.";
+                throw new \BadFunctionCallException("The hook, $name, is not callable.");
             }
         }
         // Else if the class method exists
@@ -953,14 +920,5 @@ class Router
     {
         echo 'Not Found';
         header("HTTP/1.0 404 Not Found");
-    }
-    
-    /**
-     * Display error message (HTTP Code 500)
-     */
-    protected function hookError()
-    {        
-        echo 'Error: '.$this->strError;
-        header('HTTP/1.0 500 Internal Server Error');
     }
 }

@@ -204,22 +204,14 @@ if ($router->isRouteMapped())
 }
 else
 {
-    if ($router->getMapType() == $router::C_ROUTE_ERROR)
-    {
-        header('HTTP/1.0 500 Internal Server Error');
-        echo 'Error: '.$router->getError();
-    }
-    else if ($router->getMapType() == $router::C_ROUTE_NOT_FOUND)
-    {
-        header("HTTP/1.0 404 Not Found");
-        echo 'Not found';
-    }
+    header("HTTP/1.0 404 Not Found");
+    echo 'Not found';
 }
 ```
 
 ## Hooks
 
-There are 10 hooks you can utilize if you choose automatic dispatching. 
+There are 9 hooks you can utilize if you choose automatic dispatching. 
 Manual dispatching only uses the first 3 hooks. They are called in this order:
 * $router::C_HOOK_BEFORE_MAP
 * $router::C_HOOK_ROUTE_VALIDATION
@@ -229,7 +221,6 @@ Manual dispatching only uses the first 3 hooks. They are called in this order:
 * $router::C_HOOK_PARAMETER_LOGIC
 *     $router::C_HOOK_DISPATCH - only if route is found
 *     $router::C_HOOK_NOT_FOUND - only if route is not found
-*     $router::C_HOOK_ERROR - only if a problem occurred with the configuration
 * $router::C_HOOK_AFTER_DISPATCH
 
 The hooks are easy to use and receive your $router object as parameter 0.

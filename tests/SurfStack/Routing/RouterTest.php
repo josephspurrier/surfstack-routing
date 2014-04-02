@@ -165,7 +165,10 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertSame($a->getParameters(), array($pm1, $pm2));
     }
     
-    public function testMapNoMethod()
+    /**
+     * @expectedException BadMethodCallException
+     */
+    public function testMapNoMethodStatic()
     {
         // Create an instance
         $a = new SurfStack\Routing\Router();
@@ -180,12 +183,43 @@ class RouterTest extends PHPUnit_Framework_TestCase
     
         // Pass URL
         $a->map('/foo?def');
-
-        // Should not find route
-        $this->assertFalse($a->isRouteMapped());
-        
-        // Get the mapped type
-        $this->assertSame($a->getMapType(), $a::C_ROUTE_ERROR);
+    }
+    
+    /**
+     * @expectedException BadMethodCallException
+     */
+    public function testMapNoMethodDynamic()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $method = 'foo';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo/{int}' => array($class),    // Method is missing
+        ));
+    
+        // Pass URL
+        $a->map('/foo/27?def');
+    }
+    
+    /**
+     * @expectedException BadFunctionCallException
+     */
+    public function testMapMissingFunction()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo' => 'functionDontExist',    // Method is missing
+        ));
+    
+        // Pass URL
+        $a->map('/foo?def');
     }
     
     public function testMapDynamicAction()
@@ -296,6 +330,9 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertSame($a->getParameters(), array($wildcard, $wildstring));
     }
     
+    /**
+     * @expectedException BadMethodCallException
+     */
     public function testMapDynamicWildcardActionStringProblem()
     {
         // Create an instance
@@ -313,20 +350,6 @@ class RouterTest extends PHPUnit_Framework_TestCase
     
         // Pass URL
         $a->map("/foo/$wildcard/test/$action/$wildstring?def");
-    
-        // Should find NOT route
-        $this->assertFalse($a->isRouteMapped());
-        
-        // Get the mapped type
-        $this->assertSame($a->getMapType(), $a::C_ROUTE_ERROR);
-        
-        $arr = $a->getRoute();
-        
-        // Get the WRONG mapped method
-        $this->assertNotSame($arr[1], $action);
-    
-        // Get the WRONG parameters
-        $this->assertNotSame($a->getParameters(), array($wildcard, $wildstring));
     }
     
     public function testMapDynamicActionWildcardStringInteger()
@@ -519,32 +542,6 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Should change value
         $this->assertTrue($test);
     }
-    
-    public function testHookError()
-    {
-        // Create an instance
-        $a = new SurfStack\Routing\Router();
-    
-        $class = 'TestClass';
-        $method = 'foo';
-    
-        // Pass single of route
-        $a->setRoute('GET /foo', array($class));
-    
-        // Value to change
-        $test = false;
-        
-        // Add hook
-        $a->setHook($a::C_HOOK_ERROR, function () use (&$test) {
-            $test = true;
-        });
-        
-        // Run the logic
-        $a->dispatch('/foo');
-        
-        // Should change value
-        $this->assertTrue($test);
-    }
 
     public function testHookMap()
     {
@@ -575,6 +572,30 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Should change value
         $this->assertTrue($test1);
         $this->assertTrue($test2);
+    }
+    
+    /**
+     * @expectedException BadFunctionCallException
+     */
+    public function testHookMapBad()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $method = 'foo';
+    
+        // Pass single of route
+        $a->setRoute('GET /foo', array($class, $method));
+    
+        // Value to change
+        $test1 = false;
+    
+        // Add hook
+        $a->setHook($a::C_HOOK_BEFORE_MAP, 'causeAnError');
+
+        // Run the logic
+        $a->dispatch('/foo');
     }
     
     public function testHookDispatch()
@@ -638,9 +659,6 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $a->setHook($a::C_HOOK_AFTER_MAP, function () use (&$test) {
             $test .= 'afterMAP,';
         });
-        $a->setHook($a::C_HOOK_ERROR, function () use (&$test) {
-            $test .= 'error,';
-        });
         $a->setHook($a::C_HOOK_DISPATCH, function ($r) use (&$test) {
             $test .= 'hookDispatch,';
             $r->getCallableRoute();
@@ -690,9 +708,6 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Set test equal to the values shared between closures
         $a->setHook($a::C_HOOK_AFTER_DISPATCH, function ($r) use (&$test) {
             $test = $r->test.'afterDispatch,';
-        });
-        $a->setHook($a::C_HOOK_ERROR, function ($r) {
-            $r->test .= 'error,';
         });
     
         // Run the logic
