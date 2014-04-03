@@ -240,8 +240,7 @@ class Router
         else
         {
             // Set the end of the matches as the parameters
-            unset($matches[0], $matches[1]);
-            $this->arrParameters = array_values($matches);
+            $this->arrParameters = array_values(array_slice($matches, 2));
         }
     }
     
@@ -726,6 +725,29 @@ class Router
     }
     
     /**
+     * Return the CLI arguments
+     * @return array()
+     */
+    public function getArguments()
+    {        
+        return (isset($_SERVER['argv']) ? $_SERVER['argv'] : array());
+    }
+    
+    /**
+     * Return the CLI argument from array or returns $default
+     * @param int $int
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getArgument($int, $default = null)
+    {
+        $arr = $this->getArguments();
+        
+        // Return the arguments
+        return (isset($arr[$int]) ? $arr[$int] : $default);
+    }
+    
+    /**
      * Returns the request method (GET, HEAD, POST, PUT, DELETE, OPTIONS,
      * PATCH, TRACE, CONNECT) or the X-HTTP-METHOD-OVERRIDE if it's a POST
      * request
@@ -748,12 +770,29 @@ class Router
     }
     
     /**
+     * Is the request from a command line?
+     */
+    public function isCLI()
+    {
+        return (php_sapi_name() == 'cli');
+    }
+    
+    /**
+     * Is the request an AJAX call?
+     * @return boolean
+     */
+    public function isAJAX()
+    {
+        return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+    }
+    
+    /**
      * Is the request a POST?
      * @return boolean
      */
     public function isPOST()
     {
-        return ($this->getRequestMethod() == 'POST' ? true : false);
+        return ($this->getRequestMethod() == 'POST');
     }
     
     /**
@@ -762,7 +801,7 @@ class Router
      */
     public function isGET()
     {
-        return ($this->getRequestMethod() == 'GET' ? true : false);
+        return ($this->getRequestMethod() == 'GET');
     }
     
     /**
@@ -771,7 +810,7 @@ class Router
      */
     public function isHEAD()
     {
-        return ($this->getRequestMethod() == 'HEAD' ? true : false);
+        return ($this->getRequestMethod() == 'HEAD');
     }
     
     /**
@@ -780,7 +819,7 @@ class Router
      */
     public function isPUT()
     {
-        return ($this->getRequestMethod() == 'PUT' ? true : false);
+        return ($this->getRequestMethod() == 'PUT');
     }
     
     /**
@@ -789,7 +828,7 @@ class Router
      */
     public function isDELETE()
     {
-        return ($this->getRequestMethod() == 'DELETE' ? true : false);
+        return ($this->getRequestMethod() == 'DELETE');
     }
     
     /**
@@ -798,7 +837,7 @@ class Router
      */
     public function isOPTIONS()
     {
-        return ($this->getRequestMethod() == 'OPTIONS' ? true : false);
+        return ($this->getRequestMethod() == 'OPTIONS');
     }
     
     /**
@@ -807,7 +846,7 @@ class Router
      */
     public function isPATCH()
     {
-        return ($this->getRequestMethod() == 'PATCH' ? true : false);
+        return ($this->getRequestMethod() == 'PATCH');
     }
     
     /**
@@ -816,7 +855,7 @@ class Router
      */
     public function isTRACE()
     {
-        return ($this->getRequestMethod() == 'TRACE' ? true : false);
+        return ($this->getRequestMethod() == 'TRACE');
     }
     
     /**
@@ -825,7 +864,7 @@ class Router
      */
     public function isCONNECT()
     {
-        return ($this->getRequestMethod() == 'CONNECT' ? true : false);
+        return ($this->getRequestMethod() == 'CONNECT');
     }
     
     /**
@@ -911,7 +950,7 @@ class Router
      */
     protected function hookNotFound()
     {
+        header('HTTP/1.0 404 Not Found');
         echo 'Not Found';
-        header("HTTP/1.0 404 Not Found");
     }
 }

@@ -210,7 +210,7 @@ if ($router->isRouteMapped())
 }
 else
 {
-    header("HTTP/1.0 404 Not Found");
+    header('HTTP/1.0 404 Not Found');
     echo 'Not found';
 }
 ```
@@ -349,6 +349,25 @@ You can get or test the HTTP request method using these methods:
 * $router->isPOST()
 * $router->isPUT()
 * $router->isTRACE()
+
+You can additionally test using these methods:
+
+* $router->isAJAX()
+* $router->isCLI()
+
+You can use the router with the CLI. If you run, php myScript.php world,
+and myScript.php has the code below, it will output: Hello World!
+```php
+$router->setRoute('GET default', function() {
+    echo 'Default output!';
+});
+
+$router->setRoute('GET world', function() {
+    echo 'Hello World!';
+});
+
+$router->dispatch($router->getArgument(1, 'default'));
+```
 
 You can also extend the Router class and add any features that you need.
 
