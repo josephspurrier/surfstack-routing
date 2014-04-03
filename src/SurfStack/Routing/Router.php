@@ -350,6 +350,8 @@ class Router
         
         // Call a function after map
         $this->callHook($this::C_HOOK_AFTER_MAP);
+        
+        return $this;
     }
     
     /**
@@ -555,6 +557,8 @@ class Router
     public function setWildCardDefinition($wildcard, $regex)
     {
         $this->arrWildcardDefinitions[$wildcard] = $regex;
+        
+        return $this;
     }
     
     /**
@@ -565,6 +569,8 @@ class Router
     public function setWildCardDefinitions(array $arrWildcardDefinitions)
     {
         $this->arrWildcardDefinitions = $arrWildcardDefinitions;
+        
+        return $this;
     }
     
     /**
@@ -593,6 +599,8 @@ class Router
             // Store them with the same key
             $this->arrParametersOverrideList[$pattern] = $arrOverrideParameters;
         }
+        
+        return $this;
     }
     
     /**
@@ -604,6 +612,8 @@ class Router
     {
         // Store them with the same key
         $this->arrParametersOverrideList[$pattern] = $arrParameters;
+        
+        return $this;
     }
     
     /**
@@ -614,6 +624,8 @@ class Router
     public function setOverrideParameters(array $arrParameters)
     {
         $this->arrParametersOverrideList = $arrParameters;
+        
+        return $this;
     }
     
     /**
@@ -624,6 +636,8 @@ class Router
     public function setSecondaryParameter($pattern, array $arrParameters)
     {
         $this->arrSecondaryParametersList[$pattern] = $arrParameters;
+        
+        return $this;
     }
     
     /**
@@ -634,6 +648,8 @@ class Router
     public function setSecondaryParameters(array $arrParameters)
     {
         $this->arrSecondaryParametersList = $arrParameters;
+        
+        return $this;
     }
     
     /**
@@ -643,6 +659,8 @@ class Router
     public function setRoutes(array $arrRoutes = array())
     {
         $this->arrRoutes = $arrRoutes;
+        
+        return $this;
     }
     
     /**
@@ -899,6 +917,8 @@ class Router
     public function setHook($name, $route)
     {        
         $this->hooks[$name] = $route;
+        
+        return $this;
     }
     
     /**
@@ -913,6 +933,8 @@ class Router
     public function setHooks(array $arrHooks)
     {
         $this->hooks = $arrHooks;
+        
+        return $this;
     }
     
     /**

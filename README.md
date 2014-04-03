@@ -369,6 +369,17 @@ $router->setRoute('GET world', function() {
 $router->dispatch($router->getArgument(1, 'default'));
 ```
 
+The router supports method chaining:
+```php
+$app->router->setHook(Router::C_HOOK_NOT_FOUND, function() {
+    echo 'Page not found';
+})
+->setRoute('GET /hello', function () use ($app) {
+    echo 'Hello World';
+})
+->dispatch('/hello');
+```
+
 You can also extend the Router class and add any features that you need.
 
 To install using composer, use the code from the Wiki page [Composer Wiki page](../../wiki/Composer).
