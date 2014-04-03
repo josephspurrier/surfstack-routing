@@ -371,10 +371,10 @@ $router->dispatch($router->getArgument(1, 'default'));
 
 The router supports method chaining:
 ```php
-$app->router->setHook(Router::C_HOOK_NOT_FOUND, function() {
+$router->setHook($router::C_HOOK_NOT_FOUND, function() {
     echo 'Page not found';
 })
-->setRoute('GET /hello', function () use ($app) {
+->setRoute('GET /hello', function () {
     echo 'Hello World';
 })
 ->dispatch('/hello');
