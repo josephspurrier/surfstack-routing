@@ -1,4 +1,4 @@
-SurfStack Routing in PHP [![Build Status](https://travis-ci.org/josephspurrier/surfstack-routing.png)](https://travis-ci.org/josephspurrier/surfstack-routing)
+SurfStack Routing in PHP [![Build Status](https://travis-ci.org/josephspurrier/surfstack-routing.png)](https://travis-ci.org/josephspurrier/surfstack-routing) [![Coverage Status](https://coveralls.io/repos/josephspurrier/surfstack-routing/badge.png?branch=master)](https://coveralls.io/r/josephspurrier/surfstack-routing?branch=master)
 ========================
 
 The SurfStack Router is a highly configurable PHP routing system. It was

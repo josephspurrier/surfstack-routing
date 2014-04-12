@@ -9,11 +9,12 @@ php:
 
 before_script:
   - composer install --prefer-source
+  - composer self-update
 
 script:
-  - ./vendor/bin/phpunit
+  - phpunit
   - mkdir -p build/logs
-  - ./vendor/bin/phpunit --coverage-clover build/logs/clover.xml
+  - phpunit --coverage-clover build/logs/clover.xml
 
 after_script:
-  - php ./vendor/bin/coveralls -v
+  - php coveralls -v
