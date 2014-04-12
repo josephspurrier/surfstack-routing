@@ -29,6 +29,7 @@ available routes.
 
 There is a full set of unit tests for the Router class using PHPUnit. Take a
 look at the tests if you would like to see different wildcard combinations.
+The Router class has 100% code coverage.
 
 The router also supports the X-HTTP-METHOD-OVERRIDE header for the webservers
 that don't allow HTTP operations like PUT and DELETE.
@@ -320,15 +321,6 @@ $router->setHook($router::C_HOOK_ROUTE_VALIDATION, function ($r) {
         }
         ...
 });
-```
-
-To save some memory, call this when you are finished using the SurfStack
-Router to prevent memory leaks from closures that use an instance of $router.
-
-```php
-// Free memory
-$router->destroy();
-unset($router);
 ```
 
 You can access the parameters and query string using these methods:

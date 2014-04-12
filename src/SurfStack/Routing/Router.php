@@ -157,12 +157,25 @@ class Router
     protected $arrQuery = array();
     
     /**
+     * Query String
+     * @var string
+     */
+    protected $strQuery = '';
+    
+    /**
      * Maps the static route to variables
      * @param string $key
      * @param mixed $val
      */
     protected function mapStaticRoute($key, $val)
     {
+        // If the val is an array of class/method
+        if (is_array($val) && count($val) < 1)
+        {
+            // Invalid size
+            throw new \BadMethodCallException("The key, $key, must have an array with at least 1 value: class name.");
+        }
+        
         // Store the route
         $this->mixedRoute = $val;
     }
@@ -181,25 +194,20 @@ class Router
         if (is_array($val))
         {
             // Invalid size
-            if (!$foundAction && count($val) < 2)
+            if (count($val) < 1)
             {
-                throw new \BadMethodCallException("The key, $key, must have an array with 2 values: class name and method name.");
+                throw new \BadMethodCallException("The key, $key, must have an array with at least 1 value: class name.");
             }
-            // Invalid size
-            else if ($foundAction && count($val) > 1)
-            {
-                throw new \BadMethodCallException("The key, $key, must have an array with 1 value: class name.");
-            }
-    
+            
             // If the route has {action} in it and MUST be first
             if ($foundAction)
             {
                 // Set the method as the parameter specified by the user                
-                $this->mixedRoute = array($val[0], $matches[1]);
+                $this->mixedRoute = array_merge(array($val[0], $matches[1]), array_splice($val, 1));
             }
             else
             {
-                $this->mixedRoute = array($val[0], $val[1]);
+                $this->mixedRoute = $val;
             }
         }
         else
@@ -410,7 +418,17 @@ class Router
             {
                 $class = (isset($route[0]) ? $route[0] : 'MISSING');
                 $method = (isset($route[1]) ? $route[1] : 'MISSING');
-                throw new \BadMethodCallException("The class, $class, and method, $method, cannot be called.");
+                
+                // If array contains more than 2 values (not callable)
+                if (count($route) > 2)
+                {
+                    throw new \BadMethodCallException("The class, $class, and method, $method, cannot be called (more than 2 values in array).");
+                }
+                // Else if a class or method is missing
+                else 
+                {
+                    throw new \BadMethodCallException("The class, $class, and method, $method, cannot be called.");
+                }
             }
             // Else if a string
             else if (is_string($route))
@@ -537,19 +555,6 @@ class Router
     }
     
     /**
-     * Call this method when you are finished and then call unset() on the
-     * object to free memory from closures using an instance of class
-     */
-    public function destroy()
-    {
-        // Free the memory
-        foreach ($this as &$v)
-        {
-            $v = null;
-        }
-    }
-    
-    /**
      * Set a wildcard and it's regex equivalent
      * @param string $wildcard String like '{alphanum}'
      * @param string $regex String like '([a-zA-Z0-9]+)'
@@ -669,14 +674,19 @@ class Router
      */
     protected function breakURI($strURI)
     {
+        $arr = explode('?', $strURI);
+        
         // Remove the query string
-        $this->strURI = $this->getRequestMethod().' '.current(explode('?', $strURI));
+        $this->strURI = $this->getRequestMethod().' '.$arr[0];
         
         // Create an ANY wildcard
         $this->strURIAny = 'ANY '.current(explode('?', $strURI));
         
+        // Store the query string
+        $this->strQuery = (isset($arr[1]) ? $arr[1] : (isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : ''));
+        
         // Parse the query string
-        parse_str(isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '', $this->arrQuery);
+        parse_str($this->strQuery, $this->arrQuery);
     }
     
     /**
@@ -891,7 +901,7 @@ class Router
      */
     public function getQueryString()
     {
-        return join('&', $this->arrQuery);
+        return $this->strQuery;
     }
     
     /**

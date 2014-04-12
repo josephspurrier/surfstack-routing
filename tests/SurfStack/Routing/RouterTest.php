@@ -248,6 +248,105 @@ class RouterTest extends PHPUnit_Framework_TestCase
         $this->assertSame($a->getParameters(), array());
     }
     
+    /**
+     * @expectedException BadMethodCallException
+     */
+    public function testMapStaticNotEnough()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo' => array(),
+        ));
+    
+        // Pass URL
+        $a->map("/foo?def");
+    }
+    
+    /**
+     * @expectedException BadMethodCallException
+     */
+    public function testMapDynamicActionNotEnough()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $action = 'bar';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo/*' => array(),
+        ));
+    
+        // Pass URL
+        $a->map("/foo/test?def");
+    }
+    
+    /**
+     * @expectedException BadMethodCallException
+     */
+    public function testMapDynamicActionTooMany()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $action = 'bar';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo/{action}' => array($class, 'bar'),
+        ));
+    
+        // Pass URL
+        $a->map("/foo/$action?def");
+    }
+    
+    /**
+     * @expectedException BadMethodCallException
+     */
+    public function testMapDynamicTooMany()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $action = 'bar';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo/' => array($class, 'bar', 'random'),
+        ));
+    
+        // Pass URL
+        $a->map("/foo/?def");
+    }
+    
+    /**
+     * @expectedException UnexpectedValueException
+     */
+    public function testMapDynamicBadObject()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $action = 'bar';
+    
+        // Pass the array of routes
+        $a->setRoutes(array(
+            'GET /foo/' => new stdClass(),
+        ));
+    
+        // Pass URL
+        $a->map("/foo/?def");
+    }
+    
     public function testMapDynamicActionWildcard()
     {
         // Create an instance
@@ -273,6 +372,9 @@ class RouterTest extends PHPUnit_Framework_TestCase
     
         // Get the parameters
         $this->assertSame($a->getParameters(), array($wildcard));
+        
+        // Get the parameter
+        $this->assertSame($a->getParameter(1), $wildcard);
     }
     
     public function testMapDynamicActionDoubleWildcard()
@@ -569,6 +671,35 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Run the logic
         $a->dispatch('/foo');
         
+        // Should change value
+        $this->assertTrue($test1);
+        $this->assertTrue($test2);
+    }
+    
+    public function testHooksMap()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $class = 'TestClass';
+        $method = 'foo';
+    
+        // Pass single of route
+        $a->setRoute('GET /foo', array($class, $method));
+    
+        // Value to change
+        $test1 = false;
+        $test2 = false;
+    
+        // Add hook
+        $a->setHooks(array(
+            $a::C_HOOK_BEFORE_MAP => function () use (&$test1) { $test1 = true; },
+            $a::C_HOOK_AFTER_MAP => function () use (&$test2) { $test2 = true; },
+        ));
+    
+        // Run the logic
+        $a->dispatch('/foo');
+
         // Should change value
         $this->assertTrue($test1);
         $this->assertTrue($test2);
@@ -1399,7 +1530,7 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass the overrides
         $a->setSecondaryParameters(array(
             'GET /foo/{int}' => array('secondary1'),
-            'GET /bar/{int}' => array('secondary2'),
+            'ANY /bar/{int}' => array('secondary2'),
         ));
     
         // Pass URL
@@ -1409,6 +1540,87 @@ class RouterTest extends PHPUnit_Framework_TestCase
         // Pass URL
         $a->dispatch('/bar/5?def');
         $this->assertFalse($test);
+    }
+
+    public function testCLI()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+        
+        // Get the parameters
+        $this->assertTrue($a->isCLI());
+        
+        global $argv;
+        
+        // Get the parameters
+        $this->assertSame($a->getArguments(), $argv);
+        
+        // Get the parameter
+        $this->assertSame($a->getArgument(0), $argv[0]);
+    }
+    
+    public function testRequestMethod()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        
+        // Get the parameters
+        $this->assertSame($a->getRequestMethod(), 'POST');
+        
+        unset($_SERVER['REQUEST_METHOD']);
+        
+        // Get the parameters
+        $this->assertSame($a->getRequestMethod(), 'GET');
+        
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'UPDATE';
+        
+        // Get the parameters
+        $this->assertSame($a->getRequestMethod(), 'UPDATE');
+    }
+    
+    public function testAJAX()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $_SERVER['HTTP_X_REQUESTED_WITH'] = 'xmlhttprequest';
+    
+        // Get the parameters
+        $this->assertSame($a->isAJAX(), true);
+    }
+    
+    public function testQueryString()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        $a->map('/foo?abc=123');
+        
+        // Get the parameters
+        $this->assertSame($a->getQueryString(), 'abc=123');
+        
+        // Get the parameter
+        $this->assertSame($a->getQuery('abc'), '123');
+    }
+    
+    public function testNotFound()
+    {
+        // Create an instance
+        $a = new SurfStack\Routing\Router();
+    
+        ob_start();
+        
+        // Pass URL
+        @$a->dispatch('/foo?def');
+        
+        $page = ob_get_contents();
+        
+        ob_end_clean();
+        
+        $this->assertSame($page, 'Not Found');
     }
 }
 
